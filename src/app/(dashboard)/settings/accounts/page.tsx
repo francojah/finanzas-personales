@@ -142,6 +142,7 @@ export default function AccountsSettingsPage() {
   const diff  = reconcileAcc && realBalance !== '' ? parseFloat(realBalance) - (calculatedBalance ?? 0) : null
 
   return (
+    <>
     <div className="max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -303,5 +304,6 @@ export default function AccountsSettingsPage() {
     </div>
 
     <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} feature="cuentas ilimitadas" />
+    </>
   )
 }

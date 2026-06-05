@@ -117,6 +117,7 @@ export default function CreditCardsSettingsPage() {
   }
 
   return (
+    <>
     <div className="max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -252,5 +253,6 @@ export default function CreditCardsSettingsPage() {
     </div>
 
     <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} feature="tarjetas ilimitadas" />
+    </>
   )
 }
