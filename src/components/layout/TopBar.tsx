@@ -20,12 +20,14 @@ export function TopBar() {
       <div className="md:hidden flex items-center gap-2">
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, var(--gold), #d97706)', boxShadow: '0 0 8px var(--gold-shadow)' }}
+          style={{ background: 'linear-gradient(135deg, #f0b429, #d97706)', boxShadow: '0 0 8px rgba(240,180,41,0.3)' }}
         >
-          <span className="text-white text-xs font-bold">$</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+            <polyline points="16 7 22 7 22 13"/>
+          </svg>
         </div>
-        <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Finanzas</span>
-        <span className="text-[9px] font-bold tracking-[0.2em]" style={{ color: 'var(--text-faint)' }}>JAH</span>
+        <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Finanzapp</span>
       </div>
 
       {/* Mobile search icon */}

@@ -1,6 +1,6 @@
 {
-  "name": "Finanzas Personales",
-  "short_name": "Finanzas",
+  "name": "Finanzapp",
+  "short_name": "Finanzapp",
   "description": "Tu gestor de finanzas personales",
   "start_url": "/",
   "display": "standalone",

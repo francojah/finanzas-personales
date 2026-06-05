@@ -8,13 +8,13 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Finanzas Personales',
+  title: 'Finanzapp',
   description: 'Tu gestor de finanzas personales',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Finanzas',
+    title: 'Finanzapp',
   },
 }
 

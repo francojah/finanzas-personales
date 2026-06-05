@@ -41,7 +41,8 @@ export default function RegisterPage() {
 
   return (
     <>
-      <h2 className="text-lg font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>Crear cuenta</h2>
+      <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Creá tu cuenta gratis</h2>
+      <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>Sin tarjeta de crédito requerida</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>

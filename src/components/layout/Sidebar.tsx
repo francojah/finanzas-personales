@@ -123,12 +123,12 @@ export function Sidebar() {
           style={{ background: 'linear-gradient(135deg, var(--gold) 0%, #d97706 100%)', boxShadow: '0 0 10px var(--gold-shadow)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="1" x2="12" y2="23"/>
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+            <polyline points="16 7 22 7 22 13"/>
           </svg>
         </div>
         <div className="flex flex-col">
-          <span className="font-semibold text-[15px]" style={{ color: 'var(--text-primary)' }}>Finanzas</span>
+          <span className="font-semibold text-[15px]" style={{ color: 'var(--text-primary)' }}>Finanzapp</span>
           <span className="text-[10px] font-semibold tracking-[0.2em]" style={{ color: 'var(--text-faint)' }}>JAH DEV</span>
         </div>
       </div>

@@ -32,7 +32,8 @@ export default function LoginPage() {
 
   return (
     <>
-      <h2 className="text-lg font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>Iniciar sesión</h2>
+      <h2 className="text-xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Iniciá sesión</h2>
+      <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>O creá tu cuenta gratis en segundos</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
@@ -69,10 +70,20 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="text-center text-sm mt-6" style={{ color: 'var(--text-muted)' }}>
-        ¿No tenés cuenta?{' '}
-        <Link href="/auth/register" className="font-medium" style={{ color: 'var(--accent)' }}>Registrarte</Link>
-      </p>
+      <div className="mt-5 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+          <span className="text-xs" style={{ color: 'var(--text-faint)' }}>¿no tenés cuenta?</span>
+          <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+        </div>
+        <Link
+          href="/auth/register"
+          className="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold transition-all"
+          style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', background: 'transparent' }}
+        >
+          Registrarte gratis →
+        </Link>
+      </div>
     </>
   )
 }
