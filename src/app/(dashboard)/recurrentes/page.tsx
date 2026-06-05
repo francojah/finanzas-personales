@@ -6,7 +6,6 @@ import { Repeat, Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Landmark, Chevron
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD } from '@/lib/utils'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
 
 const FREQ_LABELS: Record<string, string> = {
   weekly: 'Semanal', monthly: 'Mensual', yearly: 'Anual',
