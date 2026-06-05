@@ -86,32 +86,30 @@ export default function TransactionsPage() {
               </button>
             ))}
           </div>
-          {/* Nuevo movimiento — desktop */}
+          {/* Acciones secundarias */}
+          <button
+            onClick={() => router.push('/recurrentes')}
+            className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+          >
+            <Repeat size={14} style={{ color: 'var(--text-muted)' }} /> Recurrentes
+          </button>
+          <button
+            onClick={() => router.push('/import')}
+            className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+          >
+            <Upload size={14} style={{ color: 'var(--text-muted)' }} /> Importar
+          </button>
+          {/* Nuevo movimiento */}
           <button
             onClick={() => router.push('/transactions/new')}
-            className="hidden md:flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+            className="hidden md:flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+            style={{ background: 'var(--accent)' }}
           >
             <Plus size={16} /> Nuevo
           </button>
         </div>
-      </div>
-
-      {/* Acciones rápidas */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => router.push('/recurrentes')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-          style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-        >
-          <Repeat size={13} style={{ color: 'var(--text-muted)' }} /> Recurrentes
-        </button>
-        <button
-          onClick={() => router.push('/import')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-          style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-        >
-          <Upload size={13} style={{ color: 'var(--text-muted)' }} /> Importar extracto
-        </button>
       </div>
 
       {/* Resumen del período */}

@@ -11,14 +11,15 @@ import { cn } from '@/lib/utils'
 import type { AssetType, Currency } from '@/types/database'
 
 const ASSET_TYPES: { value: AssetType; label: string; source: 'yahoo' | 'coingecko' | 'manual' }[] = [
-  { value: 'stock',      label: 'Acción',     source: 'yahoo'     },
-  { value: 'etf',        label: 'ETF',        source: 'yahoo'     },
-  { value: 'cedear',     label: 'CEDEAR',     source: 'yahoo'     },
-  { value: 'crypto',     label: 'Crypto',     source: 'coingecko' },
-  { value: 'bond',       label: 'Bono',       source: 'manual'    },
-  { value: 'on',         label: 'ON',         source: 'manual'    },
-  { value: 'fci',        label: 'FCI',        source: 'manual'    },
-  { value: 'fixed_term', label: 'Plazo Fijo', source: 'manual'    },
+  { value: 'stock',      label: 'Acción',          source: 'yahoo'     },
+  { value: 'etf',        label: 'ETF',             source: 'yahoo'     },
+  { value: 'cedear',     label: 'CEDEAR',          source: 'yahoo'     },
+  { value: 'crypto',     label: 'Crypto',          source: 'coingecko' },
+  { value: 'bond',       label: 'Bono',            source: 'manual'    },
+  { value: 'on',         label: 'ON',              source: 'manual'    },
+  { value: 'fci',        label: 'FCI',             source: 'manual'    },
+  { value: 'fixed_term', label: 'Plazo Fijo',      source: 'manual'    },
+  { value: 'cash_usd',   label: 'Dólares (USD)',   source: 'manual'    },
 ]
 
 interface Form {
@@ -54,6 +55,7 @@ export default function NewInvestmentPage() {
 
   const assetConfig = ASSET_TYPES.find(a => a.value === form.asset_type)!
   const isFixedTerm = form.asset_type === 'fixed_term'
+  const isCashUSD   = form.asset_type === 'cash_usd'
   const needsTicker = ['stock', 'etf', 'cedear', 'crypto'].includes(form.asset_type)
 
   function set(key: keyof Form, value: string) {
@@ -116,7 +118,7 @@ export default function NewInvestmentPage() {
   async function handleSave() {
     if (!form.name.trim()) { toast.error('Ingresá un nombre'); return }
     if (!form.quantity || parseFloat(form.quantity) <= 0) { toast.error('Ingresá la cantidad'); return }
-    if (!form.avg_purchase_price) { toast.error('Ingresá el precio de compra'); return }
+    if (!isCashUSD && !form.avg_purchase_price) { toast.error('Ingresá el precio de compra'); return }
     if (!form.account_id) { toast.error('Seleccioná una cuenta'); return }
 
     setSaving(true)
@@ -124,7 +126,8 @@ export default function NewInvestmentPage() {
     if (!user) { setSaving(false); return }
 
     const newQty   = parseFloat(form.quantity)
-    const newPrice = parseFloat(form.avg_purchase_price)
+    // Para cash_usd: precio = 1 USD (la quantity es el monto en USD)
+    const newPrice = isCashUSD ? 1 : parseFloat(form.avg_purchase_price)
 
     if (existingPos) {
       // ── FUSIONAR con posición existente ─────────────────────────
@@ -213,7 +216,7 @@ export default function NewInvestmentPage() {
           style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <ArrowLeft size={18} style={{ color: 'var(--text-secondary)' }} />
         </button>
-        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Nueva compra</h1>
+        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Nueva inversión</h1>
       </div>
 
       <div className="space-y-5">
@@ -307,7 +310,31 @@ export default function NewInvestmentPage() {
         )}
 
         {/* Cantidad y precio */}
-        {!isFixedTerm ? (
+        {isCashUSD ? (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                Monto en USD
+              </label>
+              <input value={form.quantity} onChange={e => set('quantity', e.target.value)}
+                type="number" step="any" min="0" placeholder="0.00" className="input-base" />
+              <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>
+                Ingresá el total en dólares (efectivo + caja de ahorro)
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                Origen <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>(opcional)</span>
+              </label>
+              <select value={form.notes} onChange={e => set('notes', e.target.value)} className="input-base">
+                <option value="">Seleccioná...</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Caja de ahorro">Caja de ahorro</option>
+                <option value="Efectivo y caja de ahorro">Efectivo y caja de ahorro</option>
+              </select>
+            </div>
+          </div>
+        ) : !isFixedTerm ? (
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
@@ -361,7 +388,7 @@ export default function NewInvestmentPage() {
         )}
 
         {/* Rendimiento manual */}
-        {!needsTicker && !isFixedTerm && (
+        {!needsTicker && !isFixedTerm && !isCashUSD && (
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               Rendimiento actual % <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>(opcional)</span>
@@ -372,13 +399,15 @@ export default function NewInvestmentPage() {
         )}
 
         {/* Notas */}
-        <div>
-          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-            Notas <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>(opcional)</span>
-          </label>
-          <input value={form.notes} onChange={e => set('notes', e.target.value)}
-            placeholder="ej: Comprado en eToro, diversificación USA" className="input-base" />
-        </div>
+        {!isCashUSD && (
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Notas <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>(opcional)</span>
+            </label>
+            <input value={form.notes} onChange={e => set('notes', e.target.value)}
+              placeholder="ej: Comprado en eToro, diversificación USA" className="input-base" />
+          </div>
+        )}
 
         <button onClick={handleSave} disabled={saving}
           className="w-full py-3.5 rounded-xl text-white font-semibold transition-opacity disabled:opacity-60 flex items-center justify-center gap-2"

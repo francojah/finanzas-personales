@@ -12,11 +12,13 @@ const ASSET_LABELS: Record<string, string> = {
   stock: 'Acciones', etf: 'ETFs', crypto: 'Crypto',
   bond: 'Bonos', on: 'ONs', fci: 'FCI',
   cedear: 'CEDEARs', fixed_term: 'Plazo Fijo',
+  cash_usd: 'Dólares',
 }
 const ASSET_COLORS: Record<string, string> = {
   stock: '#7c6ff7', etf: '#60a5fa', crypto: '#f59e0b',
   bond: '#4ade80', on: '#22d3ee', fci: '#c084fc',
   cedear: '#f472b6', fixed_term: '#94a3b8',
+  cash_usd: '#22c55e',
 }
 
 export default function InvestmentsPage() {
@@ -44,7 +46,7 @@ export default function InvestmentsPage() {
   async function refreshPrices() {
     setRefreshing(true)
     const updates = positions
-      .filter(p => p.ticker && p.price_source !== 'manual' && p.asset_type !== 'fixed_term')
+      .filter(p => p.ticker && p.price_source !== 'manual' && p.asset_type !== 'fixed_term' && p.asset_type !== 'cash_usd')
       .map(async (pos) => {
         try {
           const source = pos.price_source === 'coingecko' ? 'coingecko' : 'yahoo'
@@ -120,7 +122,7 @@ export default function InvestmentsPage() {
           <button onClick={() => router.push('/investments/new')}
             className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl"
             style={{ background: 'var(--accent)' }}>
-            <Plus size={15} /> Nueva compra
+            <Plus size={15} /> Nueva inversión
           </button>
         </div>
       </div>
@@ -191,7 +193,7 @@ export default function InvestmentsPage() {
                       >
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold"
                           style={{ background: color + '18', color }}>
-                          {pos.ticker?.slice(0, 3) ?? '···'}
+                          {pos.asset_type === 'cash_usd' ? 'USD' : (pos.ticker?.slice(0, 3) ?? '···')}
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -201,7 +203,9 @@ export default function InvestmentsPage() {
                           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                             {isFixedTerm
                               ? `TNA ${pos.fixed_term_tna}% · vence ${pos.fixed_term_end}`
-                              : `${pos.quantity} u · precio ${pos.current_price_usd ? formatUSD(pos.current_price_usd) : 'sin precio'}`
+                              : pos.asset_type === 'cash_usd'
+                                ? pos.notes ?? (pos.name.toLowerCase().includes('caja') ? 'Caja de ahorro' : 'Efectivo')
+                                : `${pos.quantity} u · precio ${pos.current_price_usd ? formatUSD(pos.current_price_usd) : 'sin precio'}`
                             }
                           </p>
                         </div>
