@@ -4,6 +4,7 @@ import { TopBar } from '@/components/layout/TopBar'
 import { NewTransactionFAB } from '@/components/layout/NewTransactionFAB'
 import { GlobalSearch } from '@/components/shared/GlobalSearch'
 import { OnboardingWizard } from '@/components/shared/OnboardingWizard'
+import { GuruFloatingButton } from '@/components/shared/GuruFloatingButton'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -21,6 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <MobileNav />
       <GlobalSearch />
       <OnboardingWizard />
+      <GuruFloatingButton />
     </div>
   )
 }
