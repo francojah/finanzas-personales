@@ -1,11 +1,93 @@
 'use client'
 
-import { useChat } from 'ai/react'
-import { useEffect, useRef, useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Send, Sparkles, User, RefreshCw, ChevronDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
-// ── Prompts sugeridos ─────────────────────────────────────────
+// ── Tipos ────────────────────────────────────────────────────
+interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
+
+// ── Hook de chat con streaming (sin ai/react) ────────────────
+function useStreamingChat() {
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput]       = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError]       = useState<Error | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
+
+  async function sendMessage(content: string) {
+    if (!content.trim() || isLoading) return
+
+    const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', content }
+    const updated = [...messages, userMsg]
+    setMessages(updated)
+    setInput('')
+    setIsLoading(true)
+    setError(null)
+
+    const assistantId = `a-${Date.now()}`
+    setMessages(prev => [...prev, { id: assistantId, role: 'assistant', content: '' }])
+
+    abortRef.current = new AbortController()
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: updated }),
+        signal: abortRef.current.signal,
+      })
+
+      if (!res.ok) throw new Error(`Error ${res.status}`)
+      if (!res.body) throw new Error('No stream')
+
+      const reader  = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        // Parse Vercel AI SDK data stream: lines like `0:"text chunk"\n`
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.startsWith('0:')) continue
+          try {
+            const text = JSON.parse(line.slice(2)) as string
+            setMessages(prev =>
+              prev.map(m => m.id === assistantId ? { ...m, content: m.content + text } : m)
+            )
+          } catch { /* ignore parse errors */ }
+        }
+      }
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        setError(e)
+        setMessages(prev => prev.filter(m => m.id !== assistantId))
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function reload() {
+    const lastUser = [...messages].reverse().find(m => m.role === 'user')
+    if (!lastUser) return
+    setMessages(prev => prev.filter(m => m.role !== 'assistant' || prev.indexOf(m) < prev.indexOf(lastUser)))
+    sendMessage(lastUser.content)
+  }
+
+  return { messages, input, setInput, isLoading, error, sendMessage, reload }
+}
+
+// ── Prompts sugeridos ────────────────────────────────────────
 const SUGGESTED = [
   { emoji: '📉', text: '¿En qué estoy gastando más de lo necesario?' },
   { emoji: '💰', text: '¿Cuánto debería estar ahorrando por mes?' },
@@ -15,33 +97,25 @@ const SUGGESTED = [
   { emoji: '💳', text: '¿Cómo optimizo mis gastos fijos mensuales?' },
 ]
 
-// ── Markdown simple: negritas y listas ───────────────────────
+// ── Markdown simple ──────────────────────────────────────────
 function renderMessage(text: string) {
-  const lines = text.split('\n')
-  return lines.map((line, i) => {
-    // Línea vacía
+  return text.split('\n').map((line, i) => {
     if (!line.trim()) return <div key={i} className="h-2" />
 
-    // Renderizar **bold** inline
-    const renderBold = (s: string) => {
-      const parts = s.split(/(\*\*[^*]+\*\*)/g)
-      return parts.map((p, j) =>
+    const renderBold = (s: string) =>
+      s.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
         p.startsWith('**') && p.endsWith('**')
           ? <strong key={j} style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{p.slice(2, -2)}</strong>
           : p
       )
-    }
 
-    // Lista con bullet
-    if (/^[•\-\*]\s/.test(line.trim())) {
-      return (
-        <div key={i} className="flex gap-2 items-start">
-          <span className="mt-0.5 shrink-0" style={{ color: 'var(--accent-icon)' }}>•</span>
-          <span>{renderBold(line.replace(/^[•\-\*]\s/, ''))}</span>
-        </div>
-      )
-    }
-    // Lista numerada
+    if (/^[•\-\*]\s/.test(line.trim())) return (
+      <div key={i} className="flex gap-2 items-start">
+        <span className="mt-0.5 shrink-0" style={{ color: 'var(--accent-icon)' }}>•</span>
+        <span>{renderBold(line.replace(/^[•\-\*]\s/, ''))}</span>
+      </div>
+    )
+
     if (/^\d+\.\s/.test(line.trim())) {
       const [num, ...rest] = line.trim().split(/\.\s+/)
       return (
@@ -51,50 +125,33 @@ function renderMessage(text: string) {
         </div>
       )
     }
-
     return <p key={i}>{renderBold(line)}</p>
   })
 }
 
+// ── Componente principal ─────────────────────────────────────
 export default function GuruPage() {
-  const bottomRef   = useRef<HTMLDivElement>(null)
-  const inputRef    = useRef<HTMLTextAreaElement>(null)
+  const { messages, input, setInput, isLoading, error, sendMessage, reload } = useStreamingChat()
+  const bottomRef  = useRef<HTMLDivElement>(null)
+  const scrollRef  = useRef<HTMLDivElement>(null)
   const [atBottom, setAtBottom] = useState(true)
-  const scrollRef   = useRef<HTMLDivElement>(null)
 
-  const {
-    messages, input, handleInputChange, handleSubmit,
-    isLoading, error, reload, setInput,
-  } = useChat({ api: '/api/chat' })
-
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (atBottom) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
+    if (atBottom) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading, atBottom])
 
   function handleScroll() {
     const el = scrollRef.current
     if (!el) return
-    const diff = el.scrollHeight - el.scrollTop - el.clientHeight
-    setAtBottom(diff < 60)
+    setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 60)
   }
 
-  function submitSuggested(text: string) {
-    setInput(text)
-    setTimeout(() => {
-      const form = document.getElementById('chat-form') as HTMLFormElement
-      form?.requestSubmit()
-    }, 50)
+  function submit(text?: string) {
+    sendMessage(text ?? input)
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      const form = document.getElementById('chat-form') as HTMLFormElement
-      form?.requestSubmit()
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() }
   }
 
   const isEmpty = messages.length === 0
@@ -104,66 +161,36 @@ export default function GuruPage() {
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-4 shrink-0">
-        <div
-          className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-          style={{
-            background: 'linear-gradient(135deg, var(--gold) 0%, #d97706 100%)',
-            boxShadow: '0 0 16px var(--gold-shadow)',
-          }}
-        >
+        <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+          style={{ background: 'linear-gradient(135deg, var(--gold) 0%, #d97706 100%)', boxShadow: '0 0 16px var(--gold-shadow)' }}>
           <Sparkles size={18} className="text-white" />
         </div>
         <div>
           <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Guru Financiero</h1>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            Asesor IA personalizado con tus datos reales
-          </p>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Asesor IA con tus datos reales</p>
         </div>
       </div>
 
-      {/* Chat area */}
-      <div
-        ref={scrollRef}
-        onScroll={handleScroll}
-        className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1"
-      >
-        {/* Empty state */}
+      {/* Messages */}
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1">
+
         {isEmpty && (
           <div className="pt-4 space-y-6">
-            {/* Welcome */}
-            <div
-              className="rounded-2xl p-6 text-center"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <div
-                className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4"
-                style={{
-                  background: 'linear-gradient(135deg, var(--gold) 0%, #d97706 100%)',
-                  boxShadow: '0 0 20px var(--gold-shadow)',
-                }}
-              >
+            <div className="rounded-2xl p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4"
+                style={{ background: 'linear-gradient(135deg, var(--gold) 0%, #d97706 100%)', boxShadow: '0 0 20px var(--gold-shadow)' }}>
                 <Sparkles size={28} className="text-white" />
               </div>
-              <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-                ¡Hola! Soy tu Guru Financiero
-              </h2>
+              <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>¡Hola! Soy tu Guru Financiero</h2>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                Analicé tu perfil financiero completo — tus ingresos, gastos, inversiones y patrimonio.
-                Haceme cualquier pregunta y te doy recomendaciones personalizadas con tus números reales.
+                Analicé tu perfil financiero completo. Haceme cualquier pregunta y te doy recomendaciones personalizadas con tus números reales.
               </p>
             </div>
-
-            {/* Suggested prompts */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-3 px-1"
-                style={{ color: 'var(--text-faint)' }}>
-                Preguntas sugeridas
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-3 px-1" style={{ color: 'var(--text-faint)' }}>Preguntas sugeridas</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {SUGGESTED.map(({ emoji, text }) => (
-                  <button
-                    key={text}
-                    onClick={() => submitSuggested(text)}
+                  <button key={text} onClick={() => submit(text)}
                     className="text-left rounded-xl px-4 py-3 text-sm transition-all"
                     style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent-border)')}
@@ -178,72 +205,47 @@ export default function GuruPage() {
           </div>
         )}
 
-        {/* Messages */}
-        {messages.map((m) => {
+        {messages.map(m => {
           const isUser = m.role === 'user'
           return (
-            <div key={m.id} className={cn('flex gap-3', isUser ? 'flex-row-reverse' : 'flex-row')}>
-              {/* Avatar */}
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+            <div key={m.id} className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                 style={isUser
                   ? { background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }
-                  : { background: 'linear-gradient(135deg, var(--gold) 0%, #d97706 100%)', boxShadow: '0 0 8px var(--gold-shadow)' }
-                }
-              >
+                  : { background: 'linear-gradient(135deg, var(--gold) 0%, #d97706 100%)' }
+                }>
                 {isUser
                   ? <User size={14} style={{ color: 'var(--accent-icon)' }} />
                   : <Sparkles size={14} className="text-white" />
                 }
               </div>
-
-              {/* Bubble */}
-              <div
-                className="max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed space-y-1"
+              <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed space-y-1"
                 style={isUser
-                  ? {
-                      background: 'var(--accent-bg)',
-                      border: '1px solid var(--accent-border)',
-                      color: 'var(--text-primary)',
-                      borderTopRightRadius: 4,
-                    }
-                  : {
-                      background: 'var(--surface)',
-                      border: '1px solid var(--border)',
-                      color: 'var(--text-secondary)',
-                      borderTopLeftRadius: 4,
-                    }
-                }
-              >
-                {isUser
-                  ? <p>{m.content}</p>
-                  : <div className="space-y-1">{renderMessage(m.content)}</div>
-                }
+                  ? { background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', color: 'var(--text-primary)', borderTopRightRadius: 4 }
+                  : { background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)', borderTopLeftRadius: 4 }
+                }>
+                {isUser ? <p>{m.content}</p> : <div className="space-y-1">{renderMessage(m.content)}</div>}
+                {/* Cursor parpadeante mientras carga el último mensaje del assistant */}
+                {!isUser && isLoading && m === messages[messages.length - 1] && (
+                  <span className="inline-block w-0.5 h-4 ml-0.5 animate-pulse align-middle" style={{ background: 'var(--accent-icon)' }} />
+                )}
               </div>
             </div>
           )
         })}
 
-        {/* Loading indicator */}
-        {isLoading && (
+        {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
           <div className="flex gap-3 items-start">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'linear-gradient(135deg, var(--gold) 0%, #d97706 100%)' }}
-            >
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'linear-gradient(135deg, var(--gold) 0%, #d97706 100%)' }}>
               <Sparkles size={14} className="text-white" />
             </div>
-            <div
-              className="rounded-2xl px-4 py-3 flex items-center gap-2"
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderTopLeftRadius: 4 }}
-            >
+            <div className="rounded-2xl px-4 py-3 flex items-center gap-2"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderTopLeftRadius: 4 }}>
               <div className="flex gap-1">
-                {[0, 1, 2].map(i => (
-                  <div
-                    key={i}
-                    className="w-1.5 h-1.5 rounded-full animate-bounce"
-                    style={{ background: 'var(--gold)', animationDelay: `${i * 0.15}s` }}
-                  />
+                {[0,1,2].map(i => (
+                  <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce"
+                    style={{ background: 'var(--gold)', animationDelay: `${i * 0.15}s` }} />
                 ))}
               </div>
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Analizando tu perfil...</span>
@@ -251,16 +253,13 @@ export default function GuruPage() {
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div className="rounded-xl p-4 flex items-center justify-between"
             style={{ background: 'var(--expense-bg)', border: '1px solid rgba(248,113,113,0.2)' }}>
             <p className="text-sm" style={{ color: 'var(--expense)' }}>
-              Error al conectar con el Guru. Verificá que tenés configurada la API key.
+              Error al conectar. Verificá que ANTHROPIC_API_KEY esté configurada en .env.local y Vercel.
             </p>
-            <button onClick={() => reload()}
-              className="p-1.5 rounded-lg transition-colors"
-              style={{ color: 'var(--expense)' }}>
+            <button onClick={reload} className="p-1.5 rounded-lg ml-3 shrink-0" style={{ color: 'var(--expense)' }}>
               <RefreshCw size={14} />
             </button>
           </div>
@@ -269,42 +268,28 @@ export default function GuruPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Scroll to bottom button */}
       {!atBottom && (
         <div className="flex justify-center mb-2">
-          <button
-            onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); setAtBottom(true) }}
+          <button onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); setAtBottom(true) }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-            style={{ background: 'var(--accent-bg)', color: 'var(--accent-icon)', border: '1px solid var(--accent-border)' }}
-          >
+            style={{ background: 'var(--accent-bg)', color: 'var(--accent-icon)', border: '1px solid var(--accent-border)' }}>
             <ChevronDown size={13} /> Ir al final
           </button>
         </div>
       )}
 
       {/* Input */}
-      <form
-        id="chat-form"
-        onSubmit={handleSubmit}
-        className="shrink-0 flex gap-2 items-end"
-      >
-        <div
-          className="flex-1 flex items-end gap-2 rounded-2xl px-4 py-3"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-        >
+      <form onSubmit={e => { e.preventDefault(); submit() }} className="shrink-0 flex gap-2 items-end">
+        <div className="flex-1 flex items-end gap-2 rounded-2xl px-4 py-3"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <textarea
-            ref={inputRef}
             value={input}
-            onChange={handleInputChange}
+            onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Preguntame sobre tus finanzas..."
             rows={1}
             className="flex-1 bg-transparent outline-none resize-none text-sm leading-relaxed"
-            style={{
-              color: 'var(--text-primary)',
-              maxHeight: 120,
-              minHeight: 24,
-            }}
+            style={{ color: 'var(--text-primary)', maxHeight: 120, minHeight: 24 }}
             onInput={e => {
               const el = e.currentTarget
               el.style.height = 'auto'
@@ -312,18 +297,15 @@ export default function GuruPage() {
             }}
           />
         </div>
-        <button
-          type="submit"
-          disabled={isLoading || !input.trim()}
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
-          style={{ background: 'var(--accent)' }}
-        >
+        <button type="submit" disabled={isLoading || !input.trim()}
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
+          style={{ background: 'var(--accent)' }}>
           <Send size={16} className="text-white" style={{ transform: 'translateX(1px)' }} />
         </button>
       </form>
 
       <p className="text-center text-[10px] mt-2 shrink-0" style={{ color: 'var(--text-faint)' }}>
-        Basado en tus datos reales · Enter para enviar · Shift+Enter para nueva línea
+        Enter para enviar · Shift+Enter para nueva línea
       </p>
     </div>
   )
