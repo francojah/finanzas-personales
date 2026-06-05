@@ -19,7 +19,14 @@ export function MobileNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200">
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50"
+      style={{
+        background: 'rgba(14, 14, 22, 0.95)',
+        borderTop: '1px solid #1e1e2e',
+        backdropFilter: 'blur(20px)',
+      }}
+    >
       <div className="flex items-center justify-around px-2 py-1 pb-safe">
         {MOBILE_NAV.map(({ label, href, icon: Icon }) => {
           const active = href === '/'
@@ -33,16 +40,12 @@ export function MobileNav() {
             >
               <Icon
                 size={22}
-                className={cn(
-                  'transition-colors',
-                  active ? 'text-indigo-600' : 'text-slate-400'
-                )}
+                className={cn('transition-colors')}
+                style={{ color: active ? '#7c6ff7' : '#3a3a55' }}
               />
               <span
-                className={cn(
-                  'text-[10px] font-medium transition-colors',
-                  active ? 'text-indigo-600' : 'text-slate-400'
-                )}
+                className={cn('text-[10px] font-medium transition-colors')}
+                style={{ color: active ? '#7c6ff7' : '#4a4a65' }}
               >
                 {label}
               </span>
