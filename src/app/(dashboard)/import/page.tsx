@@ -660,4 +660,40 @@ function ImportPageContent() {
                         style={{ color: tx.type === 'income' ? 'var(--income)' : 'var(--expense)' }}>
                         {tx.currency === 'USD' ? formatUSD(tx.amount) : formatARS(tx.amount)}
                       </p>
-                      <p className="text-[10px]" style={{ c
+                      <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{tx.currency}</p>
+                    </div>
+
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Botones finales */}
+          <div className="flex gap-3">
+            <button onClick={() => setStep(fileType === 'pdf' ? 0 : 1)}
+              className="flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+              style={{ background: 'var(--surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+              <ChevronLeft size={15} /> Atrás
+            </button>
+            <button
+              onClick={handleImport}
+              disabled={importing || selectedCount === 0}
+              className="flex-1 py-3 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ background: 'var(--accent)' }}
+            >
+              {importing
+                ? <><Loader2 size={15} className="animate-spin" /> Importando...</>
+                : selectedCount > 0
+                  ? <>Importar {selectedCount} movimiento{selectedCount !== 1 ? 's' : ''} <ChevronRight size={15} /></>
+                  : 'Seleccioná movimientos'
+              }
+            </button>
+          </div>
+
+        </div>
+      )}
+
+    </div>
+  )
+}
