@@ -6,6 +6,8 @@ import { ArrowLeft, Plus, Pencil, Trash2, CreditCard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { usePlan } from '@/hooks/usePlan'
+import { UpgradeModal } from '@/components/shared/UpgradeModal'
 import type { CreditCard as CreditCardType } from '@/types/database'
 
 const COLORS = [
@@ -36,12 +38,14 @@ const EMPTY: CardForm = {
 export default function CreditCardsSettingsPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { features } = usePlan()
   const [cards, setCards] = useState<CreditCardType[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<CreditCardType | null>(null)
   const [form, setForm] = useState<CardForm>(EMPTY)
   const [saving, setSaving] = useState(false)
+  const [showUpgrade, setShowUpgrade] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -52,7 +56,13 @@ export default function CreditCardsSettingsPage() {
 
   useEffect(() => { load() }, [])
 
-  function openNew() { setEditing(null); setForm(EMPTY); setShowForm(true) }
+  function openNew() {
+    if (cards.length >= features.maxCreditCards) {
+      setShowUpgrade(true)
+      return
+    }
+    setEditing(null); setForm(EMPTY); setShowForm(true)
+  }
 
   function openEdit(card: CreditCardType) {
     setEditing(card)
@@ -240,5 +250,7 @@ export default function CreditCardsSettingsPage() {
         </div>
       )}
     </div>
+
+    <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} feature="tarjetas ilimitadas" />
   )
 }

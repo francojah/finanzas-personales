@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Landmark, ChevronRight, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD } from '@/lib/utils'
+import { PlanGate } from '@/components/shared/PlanGate'
 
 interface Loan {
   id: string
@@ -38,6 +39,10 @@ function remainingAmount(loan: Loan) {
 }
 
 export default function LoansPage() {
+  return <PlanGate feature="loans" featureLabel="Préstamos"><LoansPageContent /></PlanGate>
+}
+
+function LoansPageContent() {
   const router = useRouter()
   const supabase = createClient()
   const [loans, setLoans] = useState<Loan[]>([])

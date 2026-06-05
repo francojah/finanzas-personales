@@ -6,6 +6,7 @@ import { Plus, Users, CheckCircle, Clock, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD, cn } from '@/lib/utils'
 import type { Person, SharedExpense } from '@/types/database'
+import { PlanGate } from '@/components/shared/PlanGate'
 
 interface PersonWithDebt extends Person {
   total_ars: number
@@ -15,6 +16,10 @@ interface PersonWithDebt extends Person {
 }
 
 export default function PeoplePage() {
+  return <PlanGate feature="people" featureLabel="Cobros"><PeoplePageContent /></PlanGate>
+}
+
+function PeoplePageContent() {
   const router = useRouter()
   const supabase = createClient()
   const [people, setPeople] = useState<PersonWithDebt[]>([])

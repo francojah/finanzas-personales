@@ -6,6 +6,7 @@ import { Plus, RefreshCw, TrendingUp, TrendingDown, ChevronRight } from 'lucide-
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD, formatPercent } from '@/lib/utils'
 import { useExchangeRate } from '@/hooks/useExchangeRate'
+import { PlanGate } from '@/components/shared/PlanGate'
 import type { InvestmentPosition } from '@/types/database'
 
 const ASSET_LABELS: Record<string, string> = {
@@ -22,6 +23,10 @@ const ASSET_COLORS: Record<string, string> = {
 }
 
 export default function InvestmentsPage() {
+  return <PlanGate feature="investments" featureLabel="Inversiones"><InvestmentsContent /></PlanGate>
+}
+
+function InvestmentsContent() {
   const router = useRouter()
   const supabase = createClient()
   const { mep } = useExchangeRate()

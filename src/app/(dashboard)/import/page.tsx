@@ -17,6 +17,7 @@ import { extractTextFromPDF, detectBankAndParse } from '@/lib/pdf-parser'
 import { suggestCategoriesBatch } from '@/lib/category-matcher'
 import type { CategorySuggestion } from '@/lib/category-matcher'
 import { toast } from 'sonner'
+import { PlanGate } from '@/components/shared/PlanGate'
 
 // ─── Tipos ────────────────────────────────────────────────────
 interface RawRow { [key: string]: string }
@@ -89,6 +90,10 @@ const CONFIDENCE_STYLES = {
 
 // ─── Componente principal ─────────────────────────────────────
 export default function ImportPage() {
+  return <PlanGate feature="import" featureLabel="Importar extracto"><ImportPageContent /></PlanGate>
+}
+
+function ImportPageContent() {
   const router   = useRouter()
   const supabase = createClient()
   const { categories } = useCategories()
@@ -655,31 +660,4 @@ export default function ImportPage() {
                         style={{ color: tx.type === 'income' ? 'var(--income)' : 'var(--expense)' }}>
                         {tx.currency === 'USD' ? formatUSD(tx.amount) : formatARS(tx.amount)}
                       </p>
-                      <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{tx.currency}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Botones */}
-          <div className="flex gap-3">
-            <button onClick={() => fileType === 'pdf' ? setStep(0) : setStep(1)}
-              className="flex-1 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
-              style={{ background: 'var(--surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
-              <ChevronLeft size={15} /> Atrás
-            </button>
-            <button onClick={handleImport} disabled={importing || selectedCount === 0}
-              className="flex-1 py-3 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
-              style={{ background: 'var(--accent)' }}>
-              {importing
-                ? <><Loader2 size={15} className="animate-spin" /> Importando...</>
-                : <><Check size={15} /> Importar {selectedCount} movimientos</>}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+                      <p className="text-[10px]" style={{ c

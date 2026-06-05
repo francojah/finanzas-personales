@@ -8,6 +8,7 @@ import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { MonthPicker } from '@/components/shared/MonthPicker'
 import { useExchangeRate } from '@/hooks/useExchangeRate'
+import { PlanGate } from '@/components/shared/PlanGate'
 
 interface ReportData {
   userName: string
@@ -26,6 +27,10 @@ interface ReportData {
 }
 
 export default function ReportePage() {
+  return <PlanGate feature="reporte" featureLabel="Reporte mensual"><ReportePageContent /></PlanGate>
+}
+
+function ReportePageContent() {
   const supabase = createClient()
   const { mep } = useExchangeRate()
   const [date, setDate] = useState(new Date())

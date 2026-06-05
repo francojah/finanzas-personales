@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { Send, Sparkles, User, RefreshCw, ChevronDown, RotateCcw } from 'lucide-react'
 import { useStreamingChat } from '@/hooks/useStreamingChat'
+import { PlanGate } from '@/components/shared/PlanGate'
 
 const SUGGESTED = [
   { emoji: '📉', text: '¿En qué estoy gastando más de lo necesario?' },
@@ -42,6 +43,10 @@ function renderMessage(text: string) {
 }
 
 export default function GuruPage() {
+  return <PlanGate feature="guru" featureLabel="Guru Financiero"><GuruPageContent /></PlanGate>
+}
+
+function GuruPageContent() {
   const { messages, input, setInput, isLoading, error, sendMessage, reload, clearMessages } = useStreamingChat()
   const bottomRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)

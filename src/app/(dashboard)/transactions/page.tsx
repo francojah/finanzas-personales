@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, Upload, Repeat } from 'lucide-react'
+import { Plus, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, Upload, Repeat, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD, formatDateShort, cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { usePlan } from '@/hooks/usePlan'
+import { UpgradeModal } from '@/components/shared/UpgradeModal'
 import type { Transaction } from '@/types/database'
 
 const TYPE_FILTERS = [
@@ -18,11 +20,15 @@ const TYPE_FILTERS = [
 export default function TransactionsPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { features, isPremium } = usePlan()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState('')
   const [search, setSearch] = useState('')
   const [displayCurrency, setDisplayCurrency] = useState<'ARS' | 'USD'>('ARS')
+  const [showUpgrade, setShowUpgrade] = useState(false)
+
+  const txLimit = features.maxTransactions
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -37,7 +43,7 @@ export default function TransactionsPage() {
         `)
         .order('date', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(100)
+        .limit(txLimit === Infinity ? 500 : txLimit)
 
       if (typeFilter) query = query.eq('type', typeFilter)
       if (search) query = query.ilike('description', `%${search}%`)
@@ -205,6 +211,33 @@ export default function TransactionsPage() {
           ))}
         </div>
       )}
+
+      {/* Banner límite Free */}
+      {!isPremium && transactions.length >= txLimit && (
+        <div
+          className="rounded-xl p-4 flex items-center gap-3"
+          style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08))', border: '1px solid rgba(99,102,241,0.25)' }}
+        >
+          <Zap size={16} style={{ color: '#818cf8' }} />
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+              Estás viendo los últimos {txLimit} movimientos
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Pasate a Premium para ver el historial completo
+            </p>
+          </div>
+          <button
+            onClick={() => setShowUpgrade(true)}
+            className="text-xs font-bold px-3 py-1.5 rounded-lg text-white shrink-0"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+          >
+            Ver planes
+          </button>
+        </div>
+      )}
+
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
     </div>
   )
 }

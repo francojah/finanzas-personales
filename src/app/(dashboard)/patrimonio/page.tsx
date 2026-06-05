@@ -8,6 +8,7 @@ import { useExchangeRate } from '@/hooks/useExchangeRate'
 import { formatARS, formatUSD } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import type { PatrimonioAssetType } from '@/types/database'
+import { PlanGate } from '@/components/shared/PlanGate'
 
 const TYPE_CONFIG: Record<PatrimonioAssetType, { label: string; icon: typeof Building2; color: string; bg: string }> = {
   property: { label: 'Inmueble',  icon: Building2, color: '#60a5fa', bg: 'rgba(96,165,250,0.1)' },
@@ -17,6 +18,10 @@ const TYPE_CONFIG: Record<PatrimonioAssetType, { label: string; icon: typeof Bui
 }
 
 export default function PatrimonioPage() {
+  return <PlanGate feature="patrimonio" featureLabel="Patrimonio"><PatrimonioPageContent /></PlanGate>
+}
+
+function PatrimonioPageContent() {
   const router = useRouter()
   const supabase = createClient()
   const { assets, loading, refetch } = usePatrimonio()

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD, cn } from '@/lib/utils'
 import { useExchangeRate } from '@/hooks/useExchangeRate'
 import type { Project } from '@/types/database'
+import { PlanGate } from '@/components/shared/PlanGate'
 
 interface ProjectWithProgress extends Project {
   spent: number      // para proyectos de gasto
@@ -20,6 +21,10 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 }
 
 export default function ProjectsPage() {
+  return <PlanGate feature="projects" featureLabel="Metas"><ProjectsPageContent /></PlanGate>
+}
+
+function ProjectsPageContent() {
   const router = useRouter()
   const supabase = createClient()
   const { mep } = useExchangeRate()

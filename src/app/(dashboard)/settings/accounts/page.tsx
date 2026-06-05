@@ -6,6 +6,8 @@ import { ArrowLeft, Plus, Pencil, Trash2, Wallet, SlidersHorizontal, Loader2 } f
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { formatARS, formatUSD } from '@/lib/utils'
+import { usePlan } from '@/hooks/usePlan'
+import { UpgradeModal } from '@/components/shared/UpgradeModal'
 import type { Account, AccountType, Currency } from '@/types/database'
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
@@ -32,12 +34,14 @@ const EMPTY: FormState = { name: '', type: 'bank', platform: 'otro', currency: '
 export default function AccountsSettingsPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { features } = usePlan()
   const [accounts, setAccounts] = useState<Account[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Account | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY)
   const [saving, setSaving] = useState(false)
+  const [showUpgrade, setShowUpgrade] = useState(false)
 
   // Reconciliation state
   const [reconcileAcc, setReconcileAcc] = useState<Account | null>(null)
@@ -54,7 +58,14 @@ export default function AccountsSettingsPage() {
 
   useEffect(() => { load() }, [])
 
-  function openNew() { setEditing(null); setForm(EMPTY); setShowForm(true) }
+  function openNew() {
+    const activeAccounts = accounts.filter(a => a.is_active).length
+    if (activeAccounts >= features.maxAccounts) {
+      setShowUpgrade(true)
+      return
+    }
+    setEditing(null); setForm(EMPTY); setShowForm(true)
+  }
   function openEdit(acc: Account) {
     setEditing(acc)
     setForm({ name: acc.name, type: acc.type, platform: acc.platform ?? 'otro', currency: acc.currency as Currency, initial_balance: acc.initial_balance.toString(), color: acc.color })
@@ -290,5 +301,7 @@ export default function AccountsSettingsPage() {
         </div>
       )}
     </div>
+
+    <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} feature="cuentas ilimitadas" />
   )
 }
