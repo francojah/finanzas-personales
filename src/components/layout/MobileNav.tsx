@@ -12,6 +12,8 @@ const MOBILE_NAV = [
   { label: 'Más',         href: '/settings',     icon: Menu,            gold: false },
 ]
 
+// Note: "Proyectos" renamed to "Metas" in sidebar — mobile nav keeps same 5 items
+
 export function MobileNav() {
   const pathname = usePathname()
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   TrendingUp, TrendingDown, Wallet,
   ArrowUpCircle, ArrowDownCircle, ArrowLeftRight,
-  Plus, ChevronRight, Building2,
+  Plus, ChevronRight, Building2, Info,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -224,7 +224,8 @@ export default function DashboardPage() {
           iconBg={savingsRate >= 20 ? 'var(--income-bg)' : 'rgba(251,191,36,0.1)'}
           iconColor={savingsRate >= 20 ? 'var(--income)' : '#fbbf24'}
           valueColor={savingsRate >= 20 ? 'var(--income)' : '#fbbf24'}
-          subtitle={savingsRate >= 20 ? '¡Excelente!' : savingsRate > 0 ? 'Podés mejorar' : 'Más gastos que ingresos'} />
+          subtitle={savingsRate >= 20 ? '¡Excelente!' : savingsRate > 0 ? 'Podés mejorar' : 'Más gastos que ingresos'}
+          tooltip="% de tus ingresos que ahorraste este mes. Se calcula como (Ingresos − Gastos) / Ingresos. Un 20% o más se considera saludable." />
       </div>
 
       {/* Patrimonio + Inversiones */}
@@ -273,6 +274,29 @@ export default function DashboardPage() {
           <ChevronRight size={14} style={{ color: 'var(--text-faint)' }} />
         </button>
       </div>
+
+      {/* Patrimonio neto consolidado */}
+      {(patrimonioUSD > 0 || inversionesUSD > 0) && (
+        <div
+          className="rounded-xl px-4 py-3 flex items-center justify-between"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+        >
+          <div className="flex items-center gap-2">
+            <Wallet size={16} style={{ color: 'var(--text-muted)' }} />
+            <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Patrimonio neto total</span>
+          </div>
+          <div className="text-right">
+            <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+              {formatUSD(patrimonioUSD + inversionesUSD)}
+            </p>
+            {mep && (
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                {formatARS(patrimonioARS + inversionesARS)}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Budget Overview */}
       <BudgetOverview selectedDate={selectedDate} />
@@ -401,11 +425,13 @@ export default function DashboardPage() {
   )
 }
 
-function KPICard({ label, value, iconBg, iconColor, valueColor, subtitle, change, changePositiveIsGood }: {
+function KPICard({ label, value, iconBg, iconColor, valueColor, subtitle, change, changePositiveIsGood, tooltip }: {
   label: string; value: string
   iconBg: string; iconColor: string; valueColor: string
   subtitle?: string; change?: string | null; changePositiveIsGood?: boolean
+  tooltip?: string
 }) {
+  const [showTooltip, setShowTooltip] = useState(false)
   const isPositive = change?.startsWith('+')
   const changeColor = !change ? '' : changePositiveIsGood
     ? (isPositive ? 'var(--income)' : 'var(--expense)')
@@ -423,7 +449,31 @@ function KPICard({ label, value, iconBg, iconColor, valueColor, subtitle, change
           </span>
         )}
       </div>
-      <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <div className="flex items-center gap-1 mb-0.5">
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</p>
+        {tooltip && (
+          <div className="relative">
+            <button
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              onClick={() => setShowTooltip(v => !v)}
+              className="flex items-center"
+            >
+              <Info size={11} style={{ color: 'var(--text-faint)' }} />
+            </button>
+            {showTooltip && (
+              <div
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 rounded-xl text-xs z-50 shadow-lg"
+                style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+              >
+                {tooltip}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
+                  style={{ borderTopColor: 'var(--border)' }} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       <p className="text-lg font-bold leading-tight" style={{ color: valueColor }}>{value}</p>
       {subtitle && <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>}
       {change && <p className="text-[10px] mt-1" style={{ color: 'var(--text-faint)' }}>vs mes anterior</p>}

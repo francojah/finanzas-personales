@@ -5,27 +5,82 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ArrowLeftRight, TrendingUp,
   Target, CreditCard, Users, Settings, LogOut,
-  Upload, Building2, Percent, Sparkles, Repeat, FileText,
+  Building2, Percent, Sparkles, FileText, Landmark,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { ThemeSelector } from './ThemeSelector'
 
-const NAV = [
-  { label: 'Dashboard',         href: '/',                  icon: LayoutDashboard },
-  { label: 'Movimientos',       href: '/transactions',      icon: ArrowLeftRight  },
-  { label: 'Inversiones',       href: '/investments',       icon: TrendingUp      },
-  { label: 'Patrimonio',        href: '/patrimonio',        icon: Building2       },
-  { label: 'Proyectos',         href: '/projects',          icon: Target          },
-  { label: 'Tarjetas',          href: '/credit-cards',      icon: CreditCard      },
-  { label: 'Cobros',            href: '/people',            icon: Users           },
-  { label: 'Interés Compuesto', href: '/interes-compuesto', icon: Percent   },
-  { label: 'Recurrentes',       href: '/recurrentes',       icon: Repeat    },
-  { label: 'Importar',          href: '/import',            icon: Upload    },
-  { label: 'Reporte mensual',   href: '/reporte',           icon: FileText  },
-  { label: 'Guru Financiero',   href: '/guru',              icon: Sparkles, gold: true },
+interface NavItem {
+  label: string
+  href: string
+  icon: any
+  gold?: boolean
+}
+
+interface NavGroup {
+  title: string
+  items: NavItem[]
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    title: 'FINANZAS',
+    items: [
+      { label: 'Dashboard',   href: '/',             icon: LayoutDashboard },
+      { label: 'Movimientos', href: '/transactions', icon: ArrowLeftRight  },
+      { label: 'Tarjetas',    href: '/credit-cards', icon: CreditCard      },
+      { label: 'Préstamos',   href: '/loans',        icon: Landmark        },
+    ],
+  },
+  {
+    title: 'ACTIVOS',
+    items: [
+      { label: 'Inversiones', href: '/investments', icon: TrendingUp },
+      { label: 'Patrimonio',  href: '/patrimonio',  icon: Building2  },
+      { label: 'Metas',       href: '/projects',    icon: Target     },
+    ],
+  },
+  {
+    title: 'HERRAMIENTAS',
+    items: [
+      { label: 'Interés Compuesto', href: '/interes-compuesto', icon: Percent   },
+      { label: 'Reporte mensual',   href: '/reporte',           icon: FileText  },
+      { label: 'Guru Financiero',   href: '/guru',              icon: Sparkles, gold: true },
+    ],
+  },
+  {
+    title: 'PERSONAS',
+    items: [
+      { label: 'Cobros', href: '/people', icon: Users },
+    ],
+  },
 ]
+
+function NavLink({ label, href, icon: Icon, gold, pathname }: NavItem & { pathname: string }) {
+  const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
+  const goldColor = '#f0b429'
+  return (
+    <Link
+      href={href}
+      className={cn('flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all')}
+      style={active
+        ? { background: gold ? 'rgba(240,180,41,0.1)' : 'var(--accent-bg)', color: gold ? goldColor : 'var(--accent-text)', border: `1px solid ${gold ? 'rgba(240,180,41,0.25)' : 'var(--accent-border)'}` }
+        : { color: gold ? 'rgba(240,180,41,0.7)' : 'var(--text-secondary)', border: '1px solid transparent' }
+      }
+    >
+      <Icon size={17} style={{ color: active ? (gold ? goldColor : 'var(--accent-icon)') : (gold ? 'rgba(240,180,41,0.6)' : 'var(--text-muted)') }} />
+      {label}
+      {gold && !active && (
+        <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+          style={{ background: 'rgba(240,180,41,0.12)', color: goldColor }}>
+          IA
+        </span>
+      )}
+    </Link>
+  )
+}
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -60,31 +115,19 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ label, href, icon: Icon, gold }: any) => {
-          const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
-          const goldColor = '#f0b429'
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn('flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all')}
-              style={active
-                ? { background: gold ? 'rgba(240,180,41,0.1)' : 'var(--accent-bg)', color: gold ? goldColor : 'var(--accent-text)', border: `1px solid ${gold ? 'rgba(240,180,41,0.25)' : 'var(--accent-border)'}` }
-                : { color: gold ? 'rgba(240,180,41,0.7)' : 'var(--text-secondary)', border: '1px solid transparent' }
-              }
-            >
-              <Icon size={17} style={{ color: active ? (gold ? goldColor : 'var(--accent-icon)') : (gold ? 'rgba(240,180,41,0.6)' : 'var(--text-muted)') }} />
-              {label}
-              {gold && !active && (
-                <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                  style={{ background: 'rgba(240,180,41,0.12)', color: goldColor }}>
-                  IA
-                </span>
-              )}
-            </Link>
-          )
-        })}
+      <nav className="flex-1 p-3 overflow-y-auto space-y-4">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.title}>
+            <p className="px-3 mb-1 text-[10px] font-bold tracking-[0.12em]" style={{ color: 'var(--text-faint)' }}>
+              {group.title}
+            </p>
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <NavLink key={item.href} {...item} pathname={pathname} />
+              ))}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Theme selector */}

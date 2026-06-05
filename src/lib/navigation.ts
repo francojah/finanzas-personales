@@ -10,12 +10,22 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
+  // FINANZAS
   { label: 'Dashboard',       href: '/',                icon: 'layout-dashboard' },
   { label: 'Movimientos',     href: '/transactions',    icon: 'arrow-left-right' },
-  { label: 'Inversiones',     href: '/investments',     icon: 'trending-up'      },
-  { label: 'Proyectos',       href: '/projects',        icon: 'target'           },
   { label: 'Tarjetas',        href: '/credit-cards',    icon: 'credit-card'      },
+  { label: 'Préstamos',       href: '/loans',           icon: 'landmark'         },
+  // ACTIVOS
+  { label: 'Inversiones',     href: '/investments',     icon: 'trending-up'      },
+  { label: 'Patrimonio',      href: '/patrimonio',      icon: 'building-2'       },
+  { label: 'Metas',           href: '/projects',        icon: 'target'           },
+  // HERRAMIENTAS
+  { label: 'Interés Compuesto', href: '/interes-compuesto', icon: 'percent'     },
+  { label: 'Reporte mensual', href: '/reporte',         icon: 'file-text'        },
+  { label: 'Guru Financiero', href: '/guru',            icon: 'sparkles', badge: 'IA' },
+  // PERSONAS
   { label: 'Cobros',          href: '/people',          icon: 'users'            },
+  // GENERAL
   { label: 'Configuración',   href: '/settings',        icon: 'settings'         },
 ]
 
@@ -24,7 +34,7 @@ export const MOBILE_NAV_ITEMS: NavItem[] = [
   { label: 'Inicio',          href: '/',                icon: 'layout-dashboard' },
   { label: 'Movimientos',     href: '/transactions',    icon: 'arrow-left-right' },
   { label: 'Inversiones',     href: '/investments',     icon: 'trending-up'      },
-  { label: 'Proyectos',       href: '/projects',        icon: 'target'           },
+  { label: 'Metas',           href: '/projects',        icon: 'target'           },
   { label: 'Más',             href: '/settings',        icon: 'menu'             },
 ]
 

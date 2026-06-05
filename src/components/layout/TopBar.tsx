@@ -28,6 +28,16 @@ export function TopBar() {
         <span className="text-[9px] font-bold tracking-[0.2em]" style={{ color: 'var(--text-faint)' }}>JAH</span>
       </div>
 
+      {/* Mobile search icon */}
+      <button
+        onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
+        className="md:hidden p-2 rounded-lg transition-colors"
+        style={{ color: 'var(--text-muted)' }}
+        title="Buscar"
+      >
+        <Search size={18} />
+      </button>
+
       <div className="hidden md:block" />
 
       {/* Search + cotizaciones */}

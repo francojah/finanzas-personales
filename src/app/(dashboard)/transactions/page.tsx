@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search } from 'lucide-react'
+import { Plus, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, Upload, Repeat } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD, formatDateShort, cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -94,6 +94,24 @@ export default function TransactionsPage() {
             <Plus size={16} /> Nuevo
           </button>
         </div>
+      </div>
+
+      {/* Acciones rápidas */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => router.push('/recurrentes')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+        >
+          <Repeat size={13} style={{ color: 'var(--text-muted)' }} /> Recurrentes
+        </button>
+        <button
+          onClick={() => router.push('/import')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+          style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+        >
+          <Upload size={13} style={{ color: 'var(--text-muted)' }} /> Importar extracto
+        </button>
       </div>
 
       {/* Resumen del período */}
