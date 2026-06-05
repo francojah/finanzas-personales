@@ -20,12 +20,11 @@ export function formatARS(amount: number): string {
 }
 
 export function formatUSD(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)
+  return `USD ${formatted}`
 }
 
 export function formatCurrency(amount: number, currency: 'ARS' | 'USD' | string): string {

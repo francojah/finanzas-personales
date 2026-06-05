@@ -24,77 +24,56 @@ export function TopBar() {
         ccl: data.blue?.value_sell ?? null,
         lastUpdate: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
       })
-    } catch {
-      // silencioso
-    } finally {
-      setLoading(false)
-    }
+    } catch { /* silencioso */ }
+    finally { setLoading(false) }
   }
 
-  useEffect(() => {
-    fetchRates()
-  }, [])
+  useEffect(() => { fetchRates() }, [])
 
   return (
     <header
       className="px-4 md:px-6 py-3 flex items-center justify-between shrink-0"
-      style={{
-        background: '#0e0e18',
-        borderBottom: '1px solid #1a1a28',
-      }}
+      style={{ background: '#111111', borderBottom: '1px solid #1e1e1e' }}
     >
-      {/* Mobile: logo */}
+      {/* Mobile logo */}
       <div className="md:hidden flex items-center gap-2">
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{
-            background: 'linear-gradient(135deg, #f0b429 0%, #e09820 100%)',
-            boxShadow: '0 0 8px rgba(240,180,41,0.3)',
-          }}
+          style={{ background: 'linear-gradient(135deg, #f0b429, #d97706)', boxShadow: '0 0 8px rgba(240,180,41,0.2)' }}
         >
           <span className="text-white text-xs font-bold">$</span>
         </div>
-        <span className="font-bold text-sm" style={{ color: '#e2e2f0' }}>Finanzas</span>
-        <span className="text-[9px] font-semibold tracking-widest" style={{ color: '#3a3a55' }}>JAH</span>
+        <span className="font-semibold text-sm" style={{ color: '#ededed' }}>Finanzas</span>
+        <span className="text-[9px] font-bold tracking-[0.2em]" style={{ color: '#444' }}>JAH</span>
       </div>
 
-      {/* Desktop: placeholder */}
       <div className="hidden md:block" />
 
       {/* Tipo de cambio */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {rates.mep ? (
           <div
-            className="flex items-center gap-2 rounded-xl px-3 py-1.5"
-            style={{
-              background: 'rgba(124, 111, 247, 0.08)',
-              border: '1px solid rgba(124, 111, 247, 0.15)',
-            }}
+            className="flex items-center gap-2 rounded-lg px-3 py-1.5"
+            style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
           >
-            <TrendingUp size={13} style={{ color: '#7c6ff7' }} />
-            <div className="flex items-center gap-2 text-xs">
-              <span style={{ color: '#4a4a65' }}>MEP</span>
-              <span className="font-semibold" style={{ color: '#e2e2f0' }}>{formatARS(rates.mep)}</span>
-              {rates.lastUpdate && (
-                <span className="hidden sm:inline" style={{ color: '#3a3a55' }}>· {rates.lastUpdate}</span>
-              )}
-            </div>
+            <TrendingUp size={12} style={{ color: '#7c6ff7' }} />
+            <span className="text-xs" style={{ color: '#666' }}>MEP</span>
+            <span className="text-xs font-semibold" style={{ color: '#ededed' }}>{formatARS(rates.mep)}</span>
+            {rates.lastUpdate && (
+              <span className="text-xs hidden sm:inline" style={{ color: '#444' }}>· {rates.lastUpdate}</span>
+            )}
           </div>
         ) : (
-          <div
-            className="h-8 w-32 rounded-xl animate-pulse"
-            style={{ background: '#1a1a28' }}
-          />
+          <div className="h-7 w-28 rounded-lg animate-pulse" style={{ background: '#1a1a1a' }} />
         )}
-
         <button
           onClick={fetchRates}
           disabled={loading}
-          className="p-1.5 rounded-lg transition-colors"
-          style={{ color: '#3a3a55' }}
-          title="Actualizar tipo de cambio"
+          className="p-1.5 rounded-lg transition-colors hover:bg-white/5"
+          style={{ color: '#555' }}
+          title="Actualizar"
         >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
     </header>

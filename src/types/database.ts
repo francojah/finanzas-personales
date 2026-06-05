@@ -15,6 +15,7 @@ export type SharedExpenseStatus = 'pending' | 'partial' | 'settled'
 export type TradeType = 'buy' | 'sell' | 'dividend' | 'interest' | 'staking'
 export type RecurrenceFrequency = 'weekly' | 'monthly' | 'yearly'
 export type AlertType = 'expense_over_income' | 'credit_card_due' | 'fixed_term_maturity' | 'pending_debt_overdue'
+export type PatrimonioAssetType = 'property' | 'vehicle' | 'business' | 'other'
 
 export interface Profile {
   id: string
@@ -265,6 +266,19 @@ export interface DashboardSummary {
   net_worth_usd: number
   pending_installments_ars: number
   pending_debts_ars: number
+}
+
+export interface PatrimonioAsset {
+  id: string
+  user_id: string
+  name: string
+  type: PatrimonioAssetType
+  description: string | null
+  value: number
+  currency: 'ARS' | 'USD'
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }
 
 export interface MonthlyData {
