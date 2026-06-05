@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { TrendingUp, RefreshCw } from 'lucide-react'
+import { TrendingUp, RefreshCw, Search, Command } from 'lucide-react'
 import { formatARS } from '@/lib/utils'
 
 interface ExchangeRate { mep: number | null; ccl: number | null; lastUpdate: string | null }
@@ -43,6 +43,22 @@ export function TopBar() {
         <span className="text-[9px] font-bold tracking-[0.2em]" style={{ color: 'var(--text-faint)' }}>JAH</span>
       </div>
       <div className="hidden md:block" />
+
+      <div className="flex items-center gap-3">
+        {/* Search button — triggers GlobalSearch modal */}
+        <button
+          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors"
+          style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+          title="Búsqueda global (⌘K)"
+        >
+          <Search size={13} />
+          <span style={{ color: 'var(--text-faint)' }}>Buscar...</span>
+          <span className="flex items-center gap-0.5 text-[10px] px-1 rounded" style={{ background: 'var(--border)', color: 'var(--text-faint)' }}>
+            <Command size={9} />K
+          </span>
+        </button>
+      </div>
 
       <div className="flex items-center gap-2">
         {rates.mep ? (

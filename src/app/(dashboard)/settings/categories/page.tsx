@@ -25,10 +25,10 @@ const COLORS = [
 ]
 
 // ─── Tipos del form ───────────────────────────────────────────
-interface CatForm { name: string; type: 'income' | 'expense'; icon: string; color: string }
+interface CatForm { name: string; type: 'income' | 'expense'; icon: string; color: string; monthly_budget: string }
 interface SubForm { name: string; description: string }
 
-const EMPTY_CAT: CatForm  = { name: '', type: 'expense', icon: 'tag', color: '#6366f1' }
+const EMPTY_CAT: CatForm  = { name: '', type: 'expense', icon: 'tag', color: '#6366f1', monthly_budget: '' }
 const EMPTY_SUB: SubForm  = { name: '', description: '' }
 
 export default function CategoriesSettingsPage() {
@@ -75,7 +75,7 @@ export default function CategoriesSettingsPage() {
 
   function openEditCat(cat: Category) {
     setEditingCat(cat)
-    setCatForm({ name: cat.name, type: cat.type as 'income' | 'expense', icon: cat.icon, color: cat.color })
+    setCatForm({ name: cat.name, type: cat.type as 'income' | 'expense', icon: cat.icon, color: cat.color, monthly_budget: (cat as any).monthly_budget?.toString() ?? '' })
     setShowCatForm(true)
   }
 
@@ -85,7 +85,7 @@ export default function CategoriesSettingsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const payload = { user_id: user.id, name: catForm.name.trim(), type: catForm.type, icon: catForm.icon, color: catForm.color }
+    const payload = { user_id: user.id, name: catForm.name.trim(), type: catForm.type, icon: catForm.icon, color: catForm.color, monthly_budget: catForm.monthly_budget ? parseFloat(catForm.monthly_budget) : null }
 
     const { error } = editingCat
       ? await supabase.from('categories').update(payload).eq('id', editingCat.id)
@@ -232,13 +232,34 @@ export default function CategoriesSettingsPage() {
             </div>
           </div>
 
+          {/* Presupuesto mensual — solo para gastos */}
+          {catForm.type === 'expense' && (
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                Presupuesto mensual <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>(opcional)</span>
+              </label>
+              <input
+                type="number"
+                value={catForm.monthly_budget}
+                onChange={e => setCatForm(f => ({ ...f, monthly_budget: e.target.value }))}
+                placeholder="ej: 50000"
+                className="input-base"
+              />
+              <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>
+                Si lo completás, aparece una barra de progreso en el dashboard
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button onClick={() => setShowCatForm(false)}
-              className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50">
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+              style={{ background: 'var(--surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
               Cancelar
             </button>
             <button onClick={saveCat} disabled={savingCat}
-              className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold disabled:opacity-60">
+              className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-60"
+              style={{ background: 'var(--accent)' }}>
               {savingCat ? 'Guardando...' : 'Guardar'}
             </button>
           </div>

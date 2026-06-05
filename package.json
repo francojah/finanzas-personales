@@ -9,10 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.81",
     "@hookform/resolvers": "^5.0.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.4",
     "@types/papaparse": "^5.5.2",
+    "ai": "^6.0.197",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.511.0",

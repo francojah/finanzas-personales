@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ArrowLeftRight, TrendingUp,
   Target, CreditCard, Users, Settings, LogOut,
-  Upload, Building2, Percent,
+  Upload, Building2, Percent, Sparkles, Repeat, FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -20,8 +20,11 @@ const NAV = [
   { label: 'Proyectos',         href: '/projects',          icon: Target          },
   { label: 'Tarjetas',          href: '/credit-cards',      icon: CreditCard      },
   { label: 'Cobros',            href: '/people',            icon: Users           },
-  { label: 'Interés Compuesto', href: '/interes-compuesto', icon: Percent         },
-  { label: 'Importar',          href: '/import',            icon: Upload          },
+  { label: 'Interés Compuesto', href: '/interes-compuesto', icon: Percent   },
+  { label: 'Recurrentes',       href: '/recurrentes',       icon: Repeat    },
+  { label: 'Importar',          href: '/import',            icon: Upload    },
+  { label: 'Reporte mensual',   href: '/reporte',           icon: FileText  },
+  { label: 'Guru Financiero',   href: '/guru',              icon: Sparkles, gold: true },
 ]
 
 export function Sidebar() {
@@ -58,20 +61,27 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ label, href, icon: Icon }) => {
+        {NAV.map(({ label, href, icon: Icon, gold }: any) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
+          const goldColor = '#f0b429'
           return (
             <Link
               key={href}
               href={href}
               className={cn('flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all')}
               style={active
-                ? { background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }
-                : { color: 'var(--text-secondary)', border: '1px solid transparent' }
+                ? { background: gold ? 'rgba(240,180,41,0.1)' : 'var(--accent-bg)', color: gold ? goldColor : 'var(--accent-text)', border: `1px solid ${gold ? 'rgba(240,180,41,0.25)' : 'var(--accent-border)'}` }
+                : { color: gold ? 'rgba(240,180,41,0.7)' : 'var(--text-secondary)', border: '1px solid transparent' }
               }
             >
-              <Icon size={17} style={{ color: active ? 'var(--accent-icon)' : 'var(--text-muted)' }} />
+              <Icon size={17} style={{ color: active ? (gold ? goldColor : 'var(--accent-icon)') : (gold ? 'rgba(240,180,41,0.6)' : 'var(--text-muted)') }} />
               {label}
+              {gold && !active && (
+                <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                  style={{ background: 'rgba(240,180,41,0.12)', color: goldColor }}>
+                  IA
+                </span>
+              )}
             </Link>
           )
         })}

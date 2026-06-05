@@ -19,6 +19,8 @@ import { AlertsBanner } from '@/components/shared/AlertsBanner'
 import { TransactionDrawer } from '@/components/shared/TransactionDrawer'
 import { MonthPicker } from '@/components/shared/MonthPicker'
 import { useExchangeRate } from '@/hooks/useExchangeRate'
+import { BudgetOverview } from '@/components/dashboard/BudgetOverview'
+import { RecurringBanner } from '@/components/dashboard/RecurringBanner'
 import type { Transaction } from '@/types/database'
 
 interface MonthSummary { income_ars: number; expense_ars: number; income_usd: number; expense_usd: number }
@@ -199,6 +201,7 @@ export default function DashboardPage() {
       </div>
 
       <AlertsBanner />
+      <RecurringBanner />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -270,6 +273,9 @@ export default function DashboardPage() {
           <ChevronRight size={14} style={{ color: 'var(--text-faint)' }} />
         </button>
       </div>
+
+      {/* Budget Overview */}
+      <BudgetOverview selectedDate={selectedDate} />
 
       {/* Charts */}
       <div className="grid md:grid-cols-2 gap-4">
