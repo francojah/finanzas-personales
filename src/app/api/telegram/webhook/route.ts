@@ -162,18 +162,54 @@ export async function POST(req: NextRequest) {
   const document = msg.document as any | undefined
 
   // /start o /help
-  if (text === '/start' || text === '/help') {
-    await sendMessage(chatId, `💰 <b>Bot de Finanzas Personales</b>
+  if (text === '/start' || text === '/help' || text === '/ayuda') {
+    await sendMessage(chatId, `💰 <b>Finanzapp Bot</b>
 
-Tu Chat ID es: <code>${chatId}</code>
-Guardalo en Ajustes → Bot de Telegram.
+Tu Chat ID: <code>${chatId}</code>
+Guardalo en Configuración → Bot de Telegram.
 
-<b>Cómo usar:</b>
+<b>Registrar movimientos:</b>
 • <code>15000 alquiler</code> → gasto $15.000
 • <code>+50000 sueldo</code> → ingreso $50.000
 • <code>USD 200 netflix</code> → gasto USD 200
 • Foto con caption → sube comprobante y registra
-• Foto sola → solo sube el comprobante`)
+
+<b>Consultas:</b>
+• <code>/saldo</code> → balance del mes actual
+• <code>/ayuda</code> → este mensaje`)
+    return NextResponse.json({ ok: true })
+  }
+
+  // /saldo — balance del mes actual
+  if (text === '/saldo') {
+    try {
+      const supabase = adminSupabase()
+      const now = new Date()
+      const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+      const to = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${lastDay}`
+
+      const { data: txs } = await supabase
+        .from('transactions')
+        .select('type, amount_ars')
+        .eq('user_id', SUPABASE_USER)
+        .neq('type', 'transfer')
+        .gte('date', from)
+        .lte('date', to)
+
+      const income  = (txs ?? []).filter((t: any) => t.type === 'income').reduce((s: number, t: any) => s + t.amount_ars, 0)
+      const expense = (txs ?? []).filter((t: any) => t.type === 'expense').reduce((s: number, t: any) => s + t.amount_ars, 0)
+      const balance = income - expense
+      const month = now.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+
+      await sendMessage(chatId, `📊 <b>Balance de ${month}</b>
+
+💚 Ingresos: ${fmtARS(income)}
+❤️ Gastos: ${fmtARS(expense)}
+${balance >= 0 ? '✅' : '⚠️'} Balance: ${fmtARS(balance)}`)
+    } catch {
+      await sendMessage(chatId, '❌ Error al consultar el saldo.')
+    }
     return NextResponse.json({ ok: true })
   }
 

@@ -46,9 +46,9 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 const TYPE_TABS = [
-  { value: 'expense',  label: 'Gasto',        color: 'text-red-600',    bg: 'bg-red-50 border-red-200'    },
-  { value: 'income',   label: 'Ingreso',       color: 'text-green-600',  bg: 'bg-green-50 border-green-200' },
-  { value: 'transfer', label: 'Transferencia', color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200' },
+  { value: 'expense',  label: 'Gasto',        activeColor: 'var(--expense)',      activeBg: 'var(--expense-bg)'   },
+  { value: 'income',   label: 'Ingreso',       activeColor: 'var(--income)',       activeBg: 'var(--income-bg)'    },
+  { value: 'transfer', label: 'Transferencia', activeColor: 'var(--accent-icon)',  activeBg: 'var(--accent-bg)'    },
 ] as const
 
 export default function NewTransactionPage() {
@@ -185,100 +185,93 @@ export default function NewTransactionPage() {
 
   const activeType = TYPE_TABS.find(t => t.value === watchType)!
   const currentRate = watchRateType === 'mep' ? mep : ccl
+  const lbl = (text: string) => (
+    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>{text}</label>
+  )
 
   return (
     <div className="max-w-lg mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-          <ArrowLeft size={20} className="text-slate-600" />
+        <button
+          onClick={() => router.back()}
+          className="p-2 rounded-xl transition-colors"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+        >
+          <ArrowLeft size={18} />
         </button>
-        <h1 className="text-xl font-bold text-slate-900">Nuevo movimiento</h1>
+        <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Nuevo movimiento</h1>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-        <div className="grid grid-cols-3 gap-2 bg-slate-100 p-1 rounded-xl">
+        {/* Tipo */}
+        <div className="grid grid-cols-3 gap-2 p-1 rounded-xl" style={{ background: 'var(--surface-elevated)' }}>
           {TYPE_TABS.map(tab => (
             <button
               key={tab.value}
               type="button"
               onClick={() => setValue('type', tab.value)}
-              className={cn(
-                'py-2 rounded-lg text-sm font-semibold transition-all',
-                watchType === tab.value
-                  ? `bg-white shadow-sm ${tab.color}`
-                  : 'text-slate-500 hover:text-slate-700'
-              )}
+              className="py-2 rounded-lg text-sm font-semibold transition-all"
+              style={watchType === tab.value
+                ? { background: 'var(--surface)', color: tab.activeColor, boxShadow: '0 1px 4px rgba(0,0,0,0.12)' }
+                : { color: 'var(--text-muted)' }
+              }
             >
               {tab.label}
             </button>
           ))}
         </div>
 
-        <div className="card !p-4">
+        {/* Monto */}
+        <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center gap-3 mb-3">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-slate-500 mb-1">Monto</label>
+              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Monto</label>
               <input
                 {...register('amount')}
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                className="w-full text-3xl font-bold text-slate-900 outline-none bg-transparent placeholder:text-slate-300"
+                type="number" step="0.01" min="0" placeholder="0.00"
+                className="w-full text-3xl font-bold outline-none bg-transparent"
+                style={{ color: 'var(--text-primary)' }}
                 inputMode="decimal"
               />
-              {errors.amount && <p className="text-xs text-red-500 mt-1">{errors.amount.message}</p>}
+              {errors.amount && <p className="text-xs mt-1" style={{ color: 'var(--expense)' }}>{errors.amount.message}</p>}
             </div>
-            <Controller
-              control={control}
-              name="currency"
-              render={({ field }) => (
-                <div className="flex rounded-xl border border-slate-200 overflow-hidden shrink-0">
-                  {(['ARS', 'USD'] as const).map(c => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => field.onChange(c)}
-                      className={cn(
-                        'px-3 py-2 text-sm font-semibold transition-colors',
-                        field.value === c ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-50'
-                      )}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              )}
-            />
+            <Controller control={control} name="currency" render={({ field }) => (
+              <div className="flex rounded-xl overflow-hidden shrink-0" style={{ border: '1.5px solid var(--border)' }}>
+                {(['ARS', 'USD'] as const).map(c => (
+                  <button key={c} type="button" onClick={() => field.onChange(c)}
+                    className="px-3 py-2 text-sm font-semibold transition-colors"
+                    style={field.value === c
+                      ? { background: 'var(--accent)', color: '#fff' }
+                      : { color: 'var(--text-muted)' }
+                    }>{c}</button>
+                ))}
+              </div>
+            )} />
           </div>
 
           {convertedAmount && (
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-              <div className="text-sm text-slate-500">
+            <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 {watchCurrency === 'ARS' ? `≈ ${formatUSD(convertedAmount.usd)}` : `≈ ${formatARS(convertedAmount.ars)}`}
-              </div>
+              </span>
               <div className="flex items-center gap-1.5">
-                <Controller
-                  control={control}
-                  name="exchange_rate_type"
-                  render={({ field }) => (
-                    <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs">
-                      {(['mep', 'ccl'] as const).map(r => (
-                        <button key={r} type="button" onClick={() => field.onChange(r)}
-                          className={cn('px-2 py-1 font-medium uppercase transition-colors',
-                            field.value === r ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-50'
-                          )}>
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                />
-                <span className="text-xs text-slate-400">
+                <Controller control={control} name="exchange_rate_type" render={({ field }) => (
+                  <div className="flex rounded-lg overflow-hidden text-xs" style={{ border: '1px solid var(--border)' }}>
+                    {(['mep', 'ccl'] as const).map(r => (
+                      <button key={r} type="button" onClick={() => field.onChange(r)}
+                        className="px-2 py-1 font-medium uppercase transition-colors"
+                        style={field.value === r
+                          ? { background: 'var(--text-secondary)', color: 'var(--bg)' }
+                          : { color: 'var(--text-faint)' }
+                        }>{r}</button>
+                    ))}
+                  </div>
+                )} />
+                <span className="text-xs" style={{ color: 'var(--text-faint)' }}>
                   {currentRate ? formatARS(currentRate) : '...'}
                 </span>
-                <button type="button" onClick={refresh} className="p-1 text-slate-400 hover:text-slate-600">
+                <button type="button" onClick={refresh} className="p-1" style={{ color: 'var(--text-faint)' }}>
                   <RefreshCw size={11} className={rateLoading ? 'animate-spin' : ''} />
                 </button>
               </div>
@@ -286,17 +279,16 @@ export default function NewTransactionPage() {
           )}
         </div>
 
+        {/* Categoría */}
         {watchType !== 'transfer' && (
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Categoría</label>
+            <div>{lbl('Categoría')}
               <select {...register('category_id')} className="input-base">
                 <option value="">Seleccioná...</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Subcategoría</label>
+            <div>{lbl('Subcategoría')}
               <select {...register('subcategory_id')} className="input-base" disabled={!subcategories.length}>
                 <option value="">Todas</option>
                 {subcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -305,18 +297,19 @@ export default function NewTransactionPage() {
           </div>
         )}
 
+        {/* Pago */}
         {watchType !== 'transfer' ? (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Pagado con</label>
-            <div className="flex rounded-xl border border-slate-200 overflow-hidden mb-2">
-              {([['account', 'Cuenta'], ['credit_card', 'Tarjeta']] as const).map(([val, lbl]) => (
+            {lbl('Pagado con')}
+            <div className="flex rounded-xl overflow-hidden mb-2" style={{ border: '1.5px solid var(--border)' }}>
+              {([['account', 'Cuenta'], ['credit_card', 'Tarjeta']] as const).map(([val, label]) => (
                 <button key={val} type="button"
                   onClick={() => setValue('payment_method', val)}
-                  className={cn('flex-1 py-2 text-sm font-medium transition-colors',
-                    watchPaymentMethod === val ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-50'
-                  )}>
-                  {lbl}
-                </button>
+                  className="flex-1 py-2 text-sm font-semibold transition-colors"
+                  style={watchPaymentMethod === val
+                    ? { background: 'var(--accent)', color: '#fff' }
+                    : { color: 'var(--text-muted)' }
+                  }>{label}</button>
               ))}
             </div>
             {watchPaymentMethod === 'account' ? (
@@ -330,32 +323,26 @@ export default function NewTransactionPage() {
                   <option value="">Seleccioná tarjeta...</option>
                   {cards.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
                   <input type="checkbox" {...register('has_installments')} className="rounded" />
                   Compra en cuotas
                 </label>
                 {watchInstallments && (
-                  <input
-                    {...register('total_installments')}
-                    type="number" min="2" max="60"
-                    placeholder="Cantidad de cuotas"
-                    className="input-base"
-                  />
+                  <input {...register('total_installments')} type="number" min="2" max="60"
+                    placeholder="Cantidad de cuotas" className="input-base" />
                 )}
               </div>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Desde</label>
+            <div>{lbl('Desde')}
               <select {...register('account_id')} className="input-base">
                 <option value="">Cuenta origen...</option>
                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Hacia</label>
+            <div>{lbl('Hacia')}
               <select {...register('transfer_to_account_id')} className="input-base">
                 <option value="">Cuenta destino...</option>
                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -364,24 +351,20 @@ export default function NewTransactionPage() {
           </div>
         )}
 
+        {/* Fecha + descripción */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha</label>
-            <input {...register('date')} type="date" className="input-base" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Descripción</label>
-            <input {...register('description')} type="text" placeholder="Opcional" className="input-base" />
-          </div>
+          <div>{lbl('Fecha')}<input {...register('date')} type="date" className="input-base" /></div>
+          <div>{lbl('Descripción')}<input {...register('description')} type="text" placeholder="Opcional" className="input-base" /></div>
         </div>
 
         <ReceiptUpload value={receiptUrl} onChange={setReceiptUrl} disabled={isSubmitting} />
 
+        {/* Recurrente */}
         {watchType !== 'transfer' && (
-          <div className="card !p-4 space-y-3">
+          <div className="rounded-xl p-4 space-y-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" {...register('is_recurring')} className="w-4 h-4 accent-indigo-600" />
-              <span className="text-sm font-medium text-slate-700">Gasto / ingreso recurrente</span>
+              <input type="checkbox" {...register('is_recurring')} className="w-4 h-4" style={{ accentColor: 'var(--accent)' }} />
+              <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Gasto / ingreso recurrente</span>
             </label>
             {watchRecurring && (
               <select {...register('recurrence_frequency')} className="input-base">
@@ -404,13 +387,8 @@ export default function NewTransactionPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className={cn(
-            'w-full py-3.5 rounded-xl font-semibold text-white transition-colors',
-            watchType === 'expense'  ? 'bg-red-500 hover:bg-red-600' :
-            watchType === 'income'   ? 'bg-green-500 hover:bg-green-600' :
-                                       'bg-indigo-600 hover:bg-indigo-700',
-            isSubmitting && 'opacity-60'
-          )}
+          className="w-full py-3.5 rounded-xl font-semibold text-white transition-opacity disabled:opacity-60"
+          style={{ background: activeType.activeColor }}
         >
           {isSubmitting ? 'Guardando...' : `Guardar ${activeType.label}`}
         </button>

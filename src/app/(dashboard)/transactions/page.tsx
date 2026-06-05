@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, Upload, Repeat, Zap } from 'lucide-react'
+import { Plus, ArrowUpCircle, ArrowDownCircle, ArrowLeftRight, Search, Upload, Repeat, Zap, Download } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD, formatDateShort, cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -29,6 +29,28 @@ export default function TransactionsPage() {
   const [showUpgrade, setShowUpgrade] = useState(false)
 
   const txLimit = features.maxTransactions
+
+  function exportCSV() {
+    if (transactions.length === 0) return
+    const header = ['Fecha', 'Tipo', 'Descripcion', 'Categoria', 'Cuenta', 'Monto ARS', 'Monto USD']
+    const rows = transactions.map(t => [
+      t.date,
+      t.type === 'income' ? 'Ingreso' : t.type === 'expense' ? 'Gasto' : 'Transferencia',
+      t.description ?? '',
+      (t.category as any)?.name ?? '',
+      (t.account as any)?.name ?? '',
+      t.amount_ars.toFixed(2),
+      t.amount_usd.toFixed(2),
+    ])
+    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `finanzapp-movimientos-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -94,6 +116,16 @@ export default function TransactionsPage() {
               </button>
             ))}
           </div>
+          {/* Export */}
+          <button
+            onClick={exportCSV}
+            disabled={transactions.length === 0}
+            className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-40"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+            title="Exportar a CSV"
+          >
+            <Download size={14} style={{ color: 'var(--text-muted)' }} />
+          </button>
           {/* Acciones secundarias */}
           <button
             onClick={() => router.push('/recurrentes')}
