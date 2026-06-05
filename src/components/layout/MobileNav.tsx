@@ -19,8 +19,8 @@ export function MobileNav() {
     <nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-50"
       style={{
-        background: 'rgba(17,17,17,0.97)',
-        borderTop: '1px solid #222',
+        background: 'var(--surface-nav)',
+        borderTop: '1px solid var(--border)',
         backdropFilter: 'blur(12px)',
       }}
     >
@@ -33,8 +33,8 @@ export function MobileNav() {
               href={href}
               className="flex flex-col items-center gap-0.5 px-3 py-2 min-w-[52px]"
             >
-              <Icon size={22} style={{ color: active ? '#a89efa' : '#555555' }} />
-              <span className="text-[10px] font-medium" style={{ color: active ? '#c4b8ff' : '#666666' }}>
+              <Icon size={22} style={{ color: active ? 'var(--accent-icon)' : 'var(--text-muted)' }} />
+              <span className="text-[10px] font-medium" style={{ color: active ? 'var(--accent-text)' : 'var(--text-muted)' }}>
                 {label}
               </span>
             </Link>

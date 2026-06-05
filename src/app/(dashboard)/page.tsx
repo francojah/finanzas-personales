@@ -3,38 +3,35 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  TrendingUp, TrendingDown, Wallet, ArrowUpCircle,
-  ArrowDownCircle, ArrowLeftRight, Plus, ChevronRight,
-  ChevronLeft, Building2,
+  TrendingUp, TrendingDown, Wallet,
+  ArrowUpCircle, ArrowDownCircle, ArrowLeftRight,
+  Plus, ChevronRight, Building2,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, Cell, PieChart, Pie
+  ResponsiveContainer, Cell, PieChart, Pie,
 } from 'recharts'
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD, formatDateShort, cn } from '@/lib/utils'
-import { startOfMonth, endOfMonth, subMonths, addMonths, format, isSameMonth } from 'date-fns'
+import { startOfMonth, endOfMonth, subMonths, format, isSameMonth } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { AlertsBanner } from '@/components/shared/AlertsBanner'
 import { TransactionDrawer } from '@/components/shared/TransactionDrawer'
+import { MonthPicker } from '@/components/shared/MonthPicker'
 import type { Transaction } from '@/types/database'
 
-interface MonthSummary {
-  income_ars: number; expense_ars: number
-  income_usd: number; expense_usd: number
-}
+interface MonthSummary { income_ars: number; expense_ars: number; income_usd: number; expense_usd: number }
 interface CategoryBreakdown { name: string; color: string; total_ars: number }
 interface MonthBar { month: string; ingresos: number; gastos: number }
 
 const fmt = (n: number, cur: 'ARS' | 'USD') => cur === 'ARS' ? formatARS(n) : formatUSD(n)
 
-// ── Dark tooltip ──────────────────────────────────────────────
-const darkTooltipStyle = {
-  background: '#1e1e1e',
-  border: '1px solid #2a2a2a',
+const tooltipStyle = {
+  background: 'var(--surface-elevated)',
+  border: '1px solid var(--border)',
   borderRadius: 10,
   fontSize: 12,
-  color: '#ededed',
+  color: 'var(--text-primary)',
 }
 
 export default function DashboardPage() {
@@ -43,19 +40,16 @@ export default function DashboardPage() {
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS')
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [thisMonth, setThisMonth] = useState<MonthSummary>({ income_ars: 0, expense_ars: 0, income_usd: 0, expense_usd: 0 })
-  const [prevMonth, setPrevMonth] = useState<MonthSummary>({ income_ars: 0, expense_ars: 0, income_usd: 0, expense_usd: 0 })
-  const [recentTx, setRecentTx] = useState<Transaction[]>([])
-  const [categoryBreakdown, setCategoryBreakdown] = useState<CategoryBreakdown[]>([])
-  const [barData, setBarData] = useState<MonthBar[]>([])
-  const [userName, setUserName] = useState('')
+  const [thisMonth, setThisMonth]   = useState<MonthSummary>({ income_ars: 0, expense_ars: 0, income_usd: 0, expense_usd: 0 })
+  const [prevMonth, setPrevMonth]   = useState<MonthSummary>({ income_ars: 0, expense_ars: 0, income_usd: 0, expense_usd: 0 })
+  const [recentTx, setRecentTx]     = useState<Transaction[]>([])
+  const [catBreakdown, setCatBreakdown] = useState<CategoryBreakdown[]>([])
+  const [barData, setBarData]       = useState<MonthBar[]>([])
+  const [userName, setUserName]     = useState('')
   const [selectedTxId, setSelectedTxId] = useState<string | null>(null)
-  // Patrimonio + Inversiones
   const [patrimonioUSD, setPatrimonioUSD] = useState(0)
   const [patrimonioARS, setPatrimonioARS] = useState(0)
   const [inversionesUSD, setInversionesUSD] = useState(0)
-
-  const isCurrentMonth = isSameMonth(selectedDate, new Date())
 
   useEffect(() => { loadDashboard() }, [selectedDate])
 
@@ -65,8 +59,7 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data: profile } = await supabase
-        .from('profiles').select('full_name').eq('id', user.id).single()
+      const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
       setUserName(profile?.full_name?.split(' ')[0] ?? '')
 
       const monthStart = format(startOfMonth(selectedDate), 'yyyy-MM-dd')
@@ -76,11 +69,10 @@ export default function DashboardPage() {
 
       async function fetchSummary(from: string, to: string): Promise<MonthSummary> {
         const { data } = await supabase
-          .from('transactions').select('type, amount_ars, amount_usd, category:categories(name,color,icon)')
+          .from('transactions').select('type, amount_ars, amount_usd')
           .gte('date', from).lte('date', to).neq('type', 'transfer')
-        const list = (data ?? []) as unknown as Transaction[]
         const s: MonthSummary = { income_ars: 0, expense_ars: 0, income_usd: 0, expense_usd: 0 }
-        list.forEach(tx => {
+        ;(data ?? []).forEach((tx: any) => {
           if (tx.type === 'income') { s.income_ars += tx.amount_ars; s.income_usd += tx.amount_usd }
           else                      { s.expense_ars += tx.amount_ars; s.expense_usd += tx.amount_usd }
         })
@@ -94,26 +86,27 @@ export default function DashboardPage() {
       setThisMonth(summary)
       setPrevMonth(prevSummary)
 
-      const { data: txThisMonth } = await supabase
+      // Categorías
+      const { data: txMonth } = await supabase
         .from('transactions').select('*, category:categories(name,color,icon)')
         .gte('date', monthStart).lte('date', monthEnd).neq('type', 'transfer')
-      const txList = (txThisMonth ?? []) as Transaction[]
-
       const catMap: Record<string, CategoryBreakdown> = {}
-      txList.filter(t => t.type === 'expense').forEach(tx => {
+      ;((txMonth ?? []) as Transaction[]).filter(t => t.type === 'expense').forEach(tx => {
         const cat = (tx.category as any)
         const key = cat?.name ?? 'Sin categoría'
-        if (!catMap[key]) catMap[key] = { name: key, color: cat?.color ?? '#555', total_ars: 0 }
+        if (!catMap[key]) catMap[key] = { name: key, color: cat?.color ?? 'var(--border)', total_ars: 0 }
         catMap[key].total_ars += tx.amount_ars
       })
-      setCategoryBreakdown(Object.values(catMap).sort((a, b) => b.total_ars - a.total_ars).slice(0, 6))
+      setCatBreakdown(Object.values(catMap).sort((a, b) => b.total_ars - a.total_ars).slice(0, 6))
 
+      // Últimas transacciones
       const { data: recent } = await supabase
         .from('transactions').select('*, category:categories(name,color,icon), account:accounts!account_id(name)')
         .gte('date', monthStart).lte('date', monthEnd)
         .order('date', { ascending: false }).order('created_at', { ascending: false }).limit(5)
       setRecentTx((recent ?? []) as Transaction[])
 
+      // Bar chart 6 meses
       const months: MonthBar[] = []
       for (let i = 5; i >= 0; i--) {
         const d = subMonths(selectedDate, i)
@@ -122,55 +115,45 @@ export default function DashboardPage() {
           .gte('date', format(startOfMonth(d), 'yyyy-MM-dd'))
           .lte('date', format(endOfMonth(d),   'yyyy-MM-dd'))
           .neq('type', 'transfer')
-        const inc = (mTx ?? []).filter(t => t.type === 'income').reduce((s, t) => s + t.amount_ars, 0)
-        const exp = (mTx ?? []).filter(t => t.type === 'expense').reduce((s, t) => s + t.amount_ars, 0)
+        const inc = (mTx ?? []).filter((t: any) => t.type === 'income').reduce((s: number, t: any) => s + t.amount_ars, 0)
+        const exp = (mTx ?? []).filter((t: any) => t.type === 'expense').reduce((s: number, t: any) => s + t.amount_ars, 0)
         months.push({ month: format(d, 'MMM', { locale: es }), ingresos: inc, gastos: exp })
       }
       setBarData(months)
 
       // Patrimonio
-      const { data: assets } = await supabase
-        .from('assets').select('value, currency').eq('is_active', true)
+      const { data: assets } = await supabase.from('assets').select('value, currency').eq('is_active', true)
       if (assets) {
         setPatrimonioUSD((assets as any[]).filter(a => a.currency === 'USD').reduce((s: number, a: any) => s + a.value, 0))
         setPatrimonioARS((assets as any[]).filter(a => a.currency === 'ARS').reduce((s: number, a: any) => s + a.value, 0))
       }
 
-      // Inversiones (posiciones activas)
+      // Inversiones
       const { data: positions } = await supabase
-        .from('investment_positions')
-        .select('quantity, current_price_usd, avg_purchase_price, purchase_currency')
-        .eq('is_active', true)
+        .from('investment_positions').select('quantity, current_price_usd, avg_purchase_price').eq('is_active', true)
       if (positions) {
-        const totalUSD = (positions as any[]).reduce((s: number, p: any) => {
-          const price = p.current_price_usd ?? p.avg_purchase_price
-          return s + (p.quantity * price)
-        }, 0)
-        setInversionesUSD(totalUSD)
+        setInversionesUSD((positions as any[]).reduce((s: number, p: any) => s + p.quantity * (p.current_price_usd ?? p.avg_purchase_price), 0))
       }
     } finally {
       setLoading(false)
     }
   }
 
-  const balance_ars = thisMonth.income_ars - thisMonth.expense_ars
-  const balance_usd = thisMonth.income_usd - thisMonth.expense_usd
-  const prevBalance_ars = prevMonth.income_ars - prevMonth.expense_ars
-  const savingsRate = thisMonth.income_ars > 0
-    ? Math.round((balance_ars / thisMonth.income_ars) * 100) : 0
+  const balance_ars    = thisMonth.income_ars - thisMonth.expense_ars
+  const balance_usd    = thisMonth.income_usd - thisMonth.expense_usd
+  const prevBalance    = prevMonth.income_ars - prevMonth.expense_ars
+  const savingsRate    = thisMonth.income_ars > 0 ? Math.round((balance_ars / thisMonth.income_ars) * 100) : 0
 
-  function pctChange(current: number, previous: number): string | null {
-    if (previous === 0) return null
-    const pct = ((current - previous) / previous) * 100
-    return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`
+  function pctChange(curr: number, prev: number) {
+    if (prev === 0) return null
+    const p = ((curr - prev) / prev) * 100
+    return `${p >= 0 ? '+' : ''}${p.toFixed(1)}%`
   }
-
-  const selectedMonthLabel = format(selectedDate, 'MMMM yyyy', { locale: es })
 
   if (loading) return (
     <div className="space-y-4 max-w-4xl mx-auto">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="h-32 rounded-2xl animate-pulse" style={{ background: '#1a1a1a' }} />
+        <div key={i} className="h-32 rounded-2xl animate-pulse" style={{ background: 'var(--surface)' }} />
       ))}
     </div>
   )
@@ -181,41 +164,25 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: '#ededed' }}>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
             {userName ? `Hola, ${userName} 👋` : 'Dashboard'}
           </h1>
-          <div className="flex items-center gap-2 mt-1.5">
-            <button
-              onClick={() => setSelectedDate(d => subMonths(d, 1))}
-              className="p-1 rounded-lg transition-colors hover:bg-white/5"
-              style={{ color: '#555' }}
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-sm font-semibold capitalize min-w-[130px] text-center" style={{ color: '#999' }}>
-              {selectedMonthLabel}
-            </span>
-            <button
-              onClick={() => setSelectedDate(d => addMonths(d, 1))}
-              disabled={isCurrentMonth}
-              className="p-1 rounded-lg transition-colors hover:bg-white/5 disabled:opacity-30"
-              style={{ color: '#555' }}
-            >
-              <ChevronRight size={16} />
-            </button>
-            {!isCurrentMonth && (
-              <button onClick={() => setSelectedDate(new Date())} className="text-xs font-medium ml-1" style={{ color: '#7c6ff7' }}>
-                Hoy
-              </button>
-            )}
+          <div className="mt-2">
+            <MonthPicker value={selectedDate} onChange={setSelectedDate} />
           </div>
         </div>
 
-        <div className="flex rounded-xl overflow-hidden" style={{ border: '1.5px solid #2a2a2a' }}>
+        {/* Selector ARS / USD */}
+        <div className="flex rounded-xl overflow-hidden" style={{ border: '1.5px solid var(--border)' }}>
           {(['ARS', 'USD'] as const).map(c => (
-            <button key={c} onClick={() => setCurrency(c)}
+            <button
+              key={c}
+              onClick={() => setCurrency(c)}
               className="px-3 py-1.5 text-sm font-semibold transition-colors"
-              style={currency === c ? { background: '#7c6ff7', color: '#fff' } : { background: '#1a1a1a', color: '#666' }}
+              style={currency === c
+                ? { background: 'var(--accent)', color: '#fff' }
+                : { background: 'var(--surface)', color: 'var(--text-muted)' }
+              }
             >
               {c}
             </button>
@@ -223,141 +190,117 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Alertas */}
       <AlertsBanner />
 
-      {/* KPIs principales */}
+      {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard
-          label="Ingresos"
+        <KPICard label="Ingresos"
           value={fmt(currency === 'ARS' ? thisMonth.income_ars : thisMonth.income_usd, currency)}
-          iconBg="rgba(74,222,128,0.1)" iconColor="#4ade80"
-          valueColor="#4ade80"
-          change={pctChange(thisMonth.income_ars, prevMonth.income_ars)}
-          changePositiveIsGood={true}
-        />
-        <KPICard
-          label="Gastos"
+          iconBg="var(--income-bg)" iconColor="var(--income)" valueColor="var(--income)"
+          change={pctChange(thisMonth.income_ars, prevMonth.income_ars)} changePositiveIsGood />
+        <KPICard label="Gastos"
           value={fmt(currency === 'ARS' ? thisMonth.expense_ars : thisMonth.expense_usd, currency)}
-          iconBg="rgba(248,113,113,0.1)" iconColor="#f87171"
-          valueColor="#f87171"
-          change={pctChange(thisMonth.expense_ars, prevMonth.expense_ars)}
-          changePositiveIsGood={false}
-        />
-        <KPICard
-          label="Balance"
+          iconBg="var(--expense-bg)" iconColor="var(--expense)" valueColor="var(--expense)"
+          change={pctChange(thisMonth.expense_ars, prevMonth.expense_ars)} changePositiveIsGood={false} />
+        <KPICard label="Balance"
           value={fmt(currency === 'ARS' ? balance_ars : balance_usd, currency)}
-          iconBg={balance_ars >= 0 ? 'rgba(124,111,247,0.1)' : 'rgba(248,113,113,0.1)'}
-          iconColor={balance_ars >= 0 ? '#a89efa' : '#f87171'}
-          valueColor={balance_ars >= 0 ? '#ededed' : '#f87171'}
-          change={pctChange(balance_ars, prevBalance_ars)}
-          changePositiveIsGood={true}
-        />
-        <KPICard
-          label="Tasa de ahorro"
+          iconBg={balance_ars >= 0 ? 'var(--accent-bg)' : 'var(--expense-bg)'}
+          iconColor={balance_ars >= 0 ? 'var(--accent-icon)' : 'var(--expense)'}
+          valueColor={balance_ars >= 0 ? 'var(--text-primary)' : 'var(--expense)'}
+          change={pctChange(balance_ars, prevBalance)} changePositiveIsGood />
+        <KPICard label="Tasa de ahorro"
           value={`${savingsRate}%`}
-          iconBg={savingsRate >= 20 ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)'}
-          iconColor={savingsRate >= 20 ? '#4ade80' : '#fbbf24'}
-          valueColor={savingsRate >= 20 ? '#4ade80' : '#fbbf24'}
-          subtitle={savingsRate >= 20 ? '¡Excelente!' : savingsRate > 0 ? 'Podés mejorar' : 'Más gastos que ingresos'}
-        />
+          iconBg={savingsRate >= 20 ? 'var(--income-bg)' : 'rgba(251,191,36,0.1)'}
+          iconColor={savingsRate >= 20 ? 'var(--income)' : '#fbbf24'}
+          valueColor={savingsRate >= 20 ? 'var(--income)' : '#fbbf24'}
+          subtitle={savingsRate >= 20 ? '¡Excelente!' : savingsRate > 0 ? 'Podés mejorar' : 'Más gastos que ingresos'} />
       </div>
 
       {/* Patrimonio + Inversiones */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Patrimonio */}
         <button
           onClick={() => router.push('/patrimonio')}
-          className="flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all hover:border-[#333] group"
-          style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+          className="flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
         >
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(96,165,250,0.1)' }}>
             <Building2 size={19} style={{ color: '#60a5fa' }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium mb-1" style={{ color: '#666' }}>Patrimonio</p>
-            {patrimonioUSD > 0 && (
-              <p className="text-base font-bold" style={{ color: '#ededed' }}>{formatUSD(patrimonioUSD)}</p>
-            )}
-            {patrimonioARS > 0 && (
-              <p className="text-sm font-semibold" style={{ color: '#999' }}>{formatARS(patrimonioARS)}</p>
-            )}
-            {patrimonioUSD === 0 && patrimonioARS === 0 && (
-              <p className="text-sm" style={{ color: '#444' }}>Sin activos registrados</p>
-            )}
+            <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Patrimonio</p>
+            {patrimonioUSD > 0 && <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatUSD(patrimonioUSD)}</p>}
+            {patrimonioARS > 0 && <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{formatARS(patrimonioARS)}</p>}
+            {!patrimonioUSD && !patrimonioARS && <p className="text-sm" style={{ color: 'var(--text-faint)' }}>Sin activos registrados</p>}
           </div>
-          <ChevronRight size={14} style={{ color: '#333' }} />
+          <ChevronRight size={14} style={{ color: 'var(--text-faint)' }} />
         </button>
 
-        {/* Inversiones */}
         <button
           onClick={() => router.push('/investments')}
-          className="flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all hover:border-[#333] group"
-          style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+          className="flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
         >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(124,111,247,0.1)' }}>
-            <TrendingUp size={19} style={{ color: '#a89efa' }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'var(--accent-bg)' }}>
+            <TrendingUp size={19} style={{ color: 'var(--accent-icon)' }} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium mb-1" style={{ color: '#666' }}>Inversiones</p>
-            {inversionesUSD > 0 ? (
-              <p className="text-base font-bold" style={{ color: '#ededed' }}>{formatUSD(inversionesUSD)}</p>
-            ) : (
-              <p className="text-sm" style={{ color: '#444' }}>Sin posiciones activas</p>
-            )}
+            <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Inversiones</p>
+            {inversionesUSD > 0
+              ? <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatUSD(inversionesUSD)}</p>
+              : <p className="text-sm" style={{ color: 'var(--text-faint)' }}>Sin posiciones activas</p>
+            }
           </div>
-          <ChevronRight size={14} style={{ color: '#333' }} />
+          <ChevronRight size={14} style={{ color: 'var(--text-faint)' }} />
         </button>
       </div>
 
       {/* Charts */}
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="rounded-xl p-5" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-          <h2 className="text-sm font-semibold mb-4" style={{ color: '#999' }}>Ingresos vs Gastos (6 meses)</h2>
+        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>Ingresos vs Gastos (6 meses)</h2>
           {barData.every(d => d.ingresos === 0 && d.gastos === 0) ? (
-            <div className="h-40 flex items-center justify-center text-sm" style={{ color: '#444' }}>Sin datos aún</div>
+            <div className="h-40 flex items-center justify-center text-sm" style={{ color: 'var(--text-faint)' }}>Sin datos aún</div>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={barData} barGap={4}>
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#555' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                 <YAxis hide />
-                <Tooltip formatter={(v: number) => formatARS(v)} contentStyle={darkTooltipStyle} />
-                <Bar dataKey="ingresos" fill="#4ade80" radius={[4,4,0,0]} maxBarSize={20} />
-                <Bar dataKey="gastos"   fill="#f87171" radius={[4,4,0,0]} maxBarSize={20} />
+                <Tooltip formatter={(v: number) => formatARS(v)} contentStyle={tooltipStyle} />
+                <Bar dataKey="ingresos" fill="var(--income)" radius={[4,4,0,0]} maxBarSize={20} />
+                <Bar dataKey="gastos"   fill="var(--expense)" radius={[4,4,0,0]} maxBarSize={20} />
               </BarChart>
             </ResponsiveContainer>
           )}
           <div className="flex gap-4 mt-2">
-            <div className="flex items-center gap-1.5 text-xs" style={{ color: '#555' }}>
-              <div className="w-2.5 h-2.5 rounded-sm bg-green-400" /> Ingresos
-            </div>
-            <div className="flex items-center gap-1.5 text-xs" style={{ color: '#555' }}>
-              <div className="w-2.5 h-2.5 rounded-sm bg-red-400" /> Gastos
-            </div>
+            {[['var(--income)', 'Ingresos'], ['var(--expense)', 'Gastos']].map(([color, label]) => (
+              <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ background: color }} /> {label}
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="rounded-xl p-5" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-          <h2 className="text-sm font-semibold mb-4" style={{ color: '#999' }}>Gastos por categoría</h2>
-          {categoryBreakdown.length === 0 ? (
-            <div className="h-40 flex items-center justify-center text-sm" style={{ color: '#444' }}>Sin gastos este mes</div>
+        <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>Gastos por categoría</h2>
+          {catBreakdown.length === 0 ? (
+            <div className="h-40 flex items-center justify-center text-sm" style={{ color: 'var(--text-faint)' }}>Sin gastos este mes</div>
           ) : (
             <div className="flex items-center gap-4">
               <ResponsiveContainer width={120} height={120}>
                 <PieChart>
-                  <Pie data={categoryBreakdown} dataKey="total_ars" cx="50%" cy="50%" innerRadius={32} outerRadius={55} paddingAngle={2}>
-                    {categoryBreakdown.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  <Pie data={catBreakdown} dataKey="total_ars" cx="50%" cy="50%" innerRadius={32} outerRadius={55} paddingAngle={2}>
+                    {catBreakdown.map((e, i) => <Cell key={i} fill={e.color} />)}
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex-1 space-y-2">
-                {categoryBreakdown.map((cat, i) => (
+                {catBreakdown.map((cat, i) => (
                   <div key={i} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
-                      <span className="text-xs truncate" style={{ color: '#888' }}>{cat.name}</span>
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ background: cat.color }} />
+                      <span className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{cat.name}</span>
                     </div>
-                    <span className="text-xs font-semibold shrink-0" style={{ color: '#ededed' }}>
+                    <span className="text-xs font-semibold shrink-0" style={{ color: 'var(--text-primary)' }}>
                       {formatARS(cat.total_ars)}
                     </span>
                   </div>
@@ -369,21 +312,21 @@ export default function DashboardPage() {
       </div>
 
       {/* Últimos movimientos */}
-      <div className="rounded-xl p-5" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+      <div className="rounded-xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold" style={{ color: '#999' }}>Últimos movimientos</h2>
-          <button onClick={() => router.push('/transactions')} className="flex items-center gap-1 text-xs font-medium" style={{ color: '#7c6ff7' }}>
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Últimos movimientos</h2>
+          <button onClick={() => router.push('/transactions')} className="flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--accent)' }}>
             Ver todos <ChevronRight size={13} />
           </button>
         </div>
 
         {recentTx.length === 0 ? (
           <div className="text-center py-8">
-            <p className="mb-3 text-sm" style={{ color: '#444' }}>Sin movimientos todavía</p>
+            <p className="mb-3 text-sm" style={{ color: 'var(--text-faint)' }}>Sin movimientos todavía</p>
             <button
               onClick={() => router.push('/transactions/new')}
               className="inline-flex items-center gap-2 text-white text-sm px-4 py-2 rounded-xl font-semibold"
-              style={{ background: '#7c6ff7' }}
+              style={{ background: 'var(--accent)' }}
             >
               <Plus size={14} /> Cargar primero
             </button>
@@ -394,8 +337,7 @@ export default function DashboardPage() {
               const isIncome  = tx.type === 'income'
               const isExpense = tx.type === 'expense'
               const Icon = isIncome ? ArrowUpCircle : isExpense ? ArrowDownCircle : ArrowLeftRight
-              const iconColor  = isIncome ? '#4ade80' : isExpense ? '#f87171' : '#a89efa'
-              const amountColor = isIncome ? '#4ade80' : isExpense ? '#f87171' : '#a89efa'
+              const color = isIncome ? 'var(--income)' : isExpense ? 'var(--expense)' : 'var(--accent-icon)'
               const prefix = isIncome ? '+' : isExpense ? '-' : ''
               const amount = currency === 'ARS' ? tx.amount_ars : tx.amount_usd
 
@@ -403,18 +345,21 @@ export default function DashboardPage() {
                 <button
                   key={tx.id}
                   onClick={() => setSelectedTxId(tx.id)}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left hover:bg-white/3"
+                  className="w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-colors"
+                  style={{ background: 'transparent' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <Icon size={20} style={{ color: iconColor }} />
+                  <Icon size={20} style={{ color }} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: '#ededed' }}>
+                    <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
                       {tx.description || (tx.category as any)?.name || 'Sin descripción'}
                     </p>
-                    <p className="text-xs" style={{ color: '#555' }}>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                       {[tx.description ? (tx.category as any)?.name : null, formatDateShort(tx.date)].filter(Boolean).join(' · ')}
                     </p>
                   </div>
-                  <span className="text-sm font-bold shrink-0" style={{ color: amountColor }}>
+                  <span className="text-sm font-bold shrink-0" style={{ color }}>
                     {prefix}{fmt(amount, currency)}
                   </span>
                 </button>
@@ -427,45 +372,38 @@ export default function DashboardPage() {
       <TransactionDrawer
         transactionId={selectedTxId}
         onClose={() => setSelectedTxId(null)}
-        onDeleted={(id) => {
-          setRecentTx(prev => prev.filter(t => t.id !== id))
-          setSelectedTxId(null)
-        }}
+        onDeleted={id => { setRecentTx(prev => prev.filter(t => t.id !== id)); setSelectedTxId(null) }}
       />
     </div>
   )
 }
 
-// ── KPI Card ──────────────────────────────────────────────────
-function KPICard({
-  label, value, iconBg, iconColor, valueColor, subtitle, change, changePositiveIsGood,
-}: {
+function KPICard({ label, value, iconBg, iconColor, valueColor, subtitle, change, changePositiveIsGood }: {
   label: string; value: string
   iconBg: string; iconColor: string; valueColor: string
   subtitle?: string; change?: string | null; changePositiveIsGood?: boolean
 }) {
   const isPositive = change?.startsWith('+')
-  const changeColor = change == null ? ''
-    : changePositiveIsGood
-      ? (isPositive ? '#4ade80' : '#f87171')
-      : (isPositive ? '#f87171' : '#4ade80')
+  const changeColor = !change ? '' : changePositiveIsGood
+    ? (isPositive ? 'var(--income)' : 'var(--expense)')
+    : (isPositive ? 'var(--expense)' : 'var(--income)')
 
   return (
-    <div className="rounded-xl p-4" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
+    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <div className="flex items-start justify-between mb-3">
         <div className="inline-flex p-2 rounded-xl" style={{ background: iconBg }}>
           <TrendingUp size={16} style={{ color: iconColor }} />
         </div>
         {change && (
-          <span className="text-xs font-semibold px-1.5 py-0.5 rounded-md" style={{ color: changeColor, background: `${changeColor}18` }}>
+          <span className="text-xs font-semibold px-1.5 py-0.5 rounded-md" style={{ color: changeColor, background: `color-mix(in srgb, ${changeColor} 15%, transparent)` }}>
             {change}
           </span>
         )}
       </div>
-      <p className="text-xs mb-0.5" style={{ color: '#666' }}>{label}</p>
+      <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>{label}</p>
       <p className="text-lg font-bold leading-tight" style={{ color: valueColor }}>{value}</p>
-      {subtitle && <p className="text-xs mt-0.5" style={{ color: '#555' }}>{subtitle}</p>}
-      {change && <p className="text-[10px] mt-1" style={{ color: '#444' }}>vs mes anterior</p>}
+      {subtitle && <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>}
+      {change && <p className="text-[10px] mt-1" style={{ color: 'var(--text-faint)' }}>vs mes anterior</p>}
     </div>
   )
 }

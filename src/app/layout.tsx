@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { ServiceWorkerRegistrar } from '@/components/layout/ServiceWorkerRegistrar'
+import { ThemeProvider } from '@/components/layout/ThemeProvider'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -28,9 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body className={inter.className}>
-        {children}
-        <Toaster richColors position="top-right" />
-        <ServiceWorkerRegistrar />
+        <ThemeProvider>
+          {children}
+          <Toaster richColors position="top-right" />
+          <ServiceWorkerRegistrar />
+        </ThemeProvider>
       </body>
     </html>
   )

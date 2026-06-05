@@ -10,6 +10,7 @@ import {
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { ThemeSelector } from './ThemeSelector'
 
 const NAV = [
   { label: 'Dashboard',         href: '/',                  icon: LayoutDashboard },
@@ -36,16 +37,13 @@ export function Sidebar() {
   return (
     <aside
       className="hidden md:flex flex-col w-60 shrink-0"
-      style={{ background: '#111111', borderRight: '1px solid #222222' }}
+      style={{ background: 'var(--surface-nav)', borderRight: '1px solid var(--border-subtle)' }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5" style={{ borderBottom: '1px solid #1e1e1e' }}>
+      <div className="flex items-center gap-3 px-5 py-5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-          style={{
-            background: 'linear-gradient(135deg, #f0b429 0%, #d97706 100%)',
-            boxShadow: '0 0 10px rgba(240,180,41,0.25)',
-          }}
+          style={{ background: 'linear-gradient(135deg, var(--gold) 0%, #d97706 100%)', boxShadow: '0 0 10px var(--gold-shadow)' }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="1" x2="12" y2="23"/>
@@ -53,8 +51,8 @@ export function Sidebar() {
           </svg>
         </div>
         <div className="flex flex-col">
-          <span className="font-semibold text-[15px]" style={{ color: '#ededed' }}>Finanzas</span>
-          <span className="text-[10px] font-semibold tracking-[0.2em]" style={{ color: '#444' }}>JAH DEV</span>
+          <span className="font-semibold text-[15px]" style={{ color: 'var(--text-primary)' }}>Finanzas</span>
+          <span className="text-[10px] font-semibold tracking-[0.2em]" style={{ color: 'var(--text-faint)' }}>JAH DEV</span>
         </div>
       </div>
 
@@ -68,36 +66,39 @@ export function Sidebar() {
               href={href}
               className={cn('flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all')}
               style={active
-                ? { background: 'rgba(124,111,247,0.12)', color: '#c4b8ff', border: '1px solid rgba(124,111,247,0.15)' }
-                : { color: '#888888', border: '1px solid transparent' }
+                ? { background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }
+                : { color: 'var(--text-secondary)', border: '1px solid transparent' }
               }
             >
-              <Icon size={17} style={{ color: active ? '#a89efa' : '#555555' }} />
+              <Icon size={17} style={{ color: active ? 'var(--accent-icon)' : 'var(--text-muted)' }} />
               {label}
             </Link>
           )
         })}
       </nav>
 
+      {/* Theme selector */}
+      <ThemeSelector />
+
       {/* Bottom */}
-      <div className="p-3 space-y-0.5" style={{ borderTop: '1px solid #1e1e1e' }}>
+      <div className="p-3 space-y-0.5" style={{ borderTop: '1px solid var(--border-subtle)' }}>
         <Link
           href="/settings"
           className={cn('flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all')}
           style={pathname.startsWith('/settings')
-            ? { background: 'rgba(124,111,247,0.12)', color: '#c4b8ff', border: '1px solid rgba(124,111,247,0.15)' }
-            : { color: '#888888', border: '1px solid transparent' }
+            ? { background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }
+            : { color: 'var(--text-secondary)', border: '1px solid transparent' }
           }
         >
-          <Settings size={17} style={{ color: pathname.startsWith('/settings') ? '#a89efa' : '#555555' }} />
+          <Settings size={17} style={{ color: pathname.startsWith('/settings') ? 'var(--accent-icon)' : 'var(--text-muted)' }} />
           Configuración
         </Link>
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:text-red-400"
-          style={{ color: '#888888', border: '1px solid transparent' }}
+          style={{ color: 'var(--text-secondary)', border: '1px solid transparent' }}
         >
-          <LogOut size={17} style={{ color: '#555555' }} />
+          <LogOut size={17} style={{ color: 'var(--text-muted)' }} />
           Cerrar sesión
         </button>
       </div>

@@ -5,7 +5,7 @@ import { NewTransactionFAB } from '@/components/layout/NewTransactionFAB'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen" style={{ background: '#0f0f0f' }}>
+    <div className="flex h-screen" style={{ background: 'var(--bg)' }}>
       {/* Sidebar — solo desktop */}
       <Sidebar />
 

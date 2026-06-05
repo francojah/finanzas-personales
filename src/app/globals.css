@@ -1,28 +1,59 @@
 @import "tailwindcss";
 
+/* ── Tema oscuro (default) ─────────────────────────────────── */
+:root {
+  --bg:               #0f0f0f;
+  --surface-nav:      #111111;
+  --surface:          #1a1a1a;
+  --surface-elevated: #222222;
+  --surface-hover:    #1e1e1e;
+  --border:           #2a2a2a;
+  --border-subtle:    #1e1e1e;
+  --text-primary:     #ededed;
+  --text-secondary:   #999999;
+  --text-muted:       #666666;
+  --text-faint:       #444444;
+  --accent:           #7c6ff7;
+  --accent-bg:        rgba(124, 111, 247, 0.12);
+  --accent-border:    rgba(124, 111, 247, 0.2);
+  --accent-text:      #c4b8ff;
+  --accent-icon:      #a89efa;
+  --income:           #4ade80;
+  --income-bg:        rgba(74, 222, 128, 0.1);
+  --expense:          #f87171;
+  --expense-bg:       rgba(248, 113, 113, 0.1);
+  --gold:             #f0b429;
+  --gold-shadow:      rgba(240, 180, 41, 0.25);
+}
+
+/* ── Tema claro ────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:               #f8fafc;
+  --surface-nav:      #ffffff;
+  --surface:          #ffffff;
+  --surface-elevated: #f1f5f9;
+  --surface-hover:    #f8fafc;
+  --border:           #e2e8f0;
+  --border-subtle:    #f1f5f9;
+  --text-primary:     #0f172a;
+  --text-secondary:   #64748b;
+  --text-muted:       #94a3b8;
+  --text-faint:       #cbd5e1;
+  --accent:           #6366f1;
+  --accent-bg:        rgba(99, 102, 241, 0.08);
+  --accent-border:    rgba(99, 102, 241, 0.2);
+  --accent-text:      #4f46e5;
+  --accent-icon:      #6366f1;
+  --income:           #16a34a;
+  --income-bg:        rgba(22, 163, 74, 0.08);
+  --expense:          #dc2626;
+  --expense-bg:       rgba(220, 38, 38, 0.08);
+  --gold:             #d97706;
+  --gold-shadow:      rgba(217, 119, 6, 0.2);
+}
+
 @theme {
-  /* Accent */
-  --color-primary: #7c6ff7;
-  --color-primary-dark: #6358e8;
-  --color-primary-light: rgba(124, 111, 247, 0.12);
-
-  /* Semantic */
-  --color-income: #4ade80;
-  --color-income-light: rgba(74, 222, 128, 0.1);
-  --color-expense: #f87171;
-  --color-expense-light: rgba(248, 113, 113, 0.1);
-  --color-transfer: #7c6ff7;
-  --color-transfer-light: rgba(124, 111, 247, 0.1);
-
-  /* Surfaces — escala de grises pura */
-  --color-surface: #1a1a1a;
-  --color-surface-secondary: #0f0f0f;
-  --color-surface-elevated: #222222;
-  --color-border: #2a2a2a;
-  --color-muted: #666666;
-
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -32,44 +63,51 @@
 * { -webkit-tap-highlight-color: transparent; }
 
 body {
-  background-color: #0f0f0f;
-  color: #ededed;
+  background-color: var(--bg);
+  color: var(--text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #444; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-/* Cards */
+/* ── Clases utilitarias reutilizables ─────────────────────── */
 .card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1.25rem;
 }
 
-/* Inputs */
 .input-base {
   width: 100%;
-  border: 1.5px solid #2a2a2a;
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   padding: 0.625rem 0.875rem;
   font-size: 0.9375rem;
-  color: #ededed;
-  background: #222222;
+  color: var(--text-primary);
+  background: var(--surface-elevated);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .input-base:focus {
-  border-color: #7c6ff7;
-  box-shadow: 0 0 0 3px rgba(124, 111, 247, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
-.input-base::placeholder { color: #555555; }
+.input-base::placeholder { color: var(--text-faint); }
 
-/* Badges */
+/* Select styled */
+.select-base {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem !important;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -78,11 +116,10 @@ body {
   font-size: 11px;
   font-weight: 600;
 }
-.badge-income   { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
-.badge-expense  { background: rgba(248, 113, 113, 0.12); color: #f87171; }
-.badge-transfer { background: rgba(124, 111, 247, 0.12); color: #a89efa; }
+.badge-income   { background: var(--income-bg); color: var(--income); }
+.badge-expense  { background: var(--expense-bg); color: var(--expense); }
+.badge-transfer { background: var(--accent-bg); color: var(--accent-icon); }
 
-/* Amounts */
-.amount-income  { color: #4ade80; }
-.amount-expense { color: #f87171; }
-.amount-neutral { color: #ededed; }
+.amount-income  { color: var(--income); }
+.amount-expense { color: var(--expense); }
+.amount-neutral { color: var(--text-primary); }

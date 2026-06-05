@@ -4,11 +4,7 @@ import { useEffect, useState } from 'react'
 import { TrendingUp, RefreshCw } from 'lucide-react'
 import { formatARS } from '@/lib/utils'
 
-interface ExchangeRate {
-  mep: number | null
-  ccl: number | null
-  lastUpdate: string | null
-}
+interface ExchangeRate { mep: number | null; ccl: number | null; lastUpdate: string | null }
 
 export function TopBar() {
   const [rates, setRates] = useState<ExchangeRate>({ mep: null, ccl: null, lastUpdate: null })
@@ -33,44 +29,42 @@ export function TopBar() {
   return (
     <header
       className="px-4 md:px-6 py-3 flex items-center justify-between shrink-0"
-      style={{ background: '#111111', borderBottom: '1px solid #1e1e1e' }}
+      style={{ background: 'var(--surface-nav)', borderBottom: '1px solid var(--border-subtle)' }}
     >
       {/* Mobile logo */}
       <div className="md:hidden flex items-center gap-2">
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #f0b429, #d97706)', boxShadow: '0 0 8px rgba(240,180,41,0.2)' }}
+          style={{ background: 'linear-gradient(135deg, var(--gold), #d97706)', boxShadow: '0 0 8px var(--gold-shadow)' }}
         >
           <span className="text-white text-xs font-bold">$</span>
         </div>
-        <span className="font-semibold text-sm" style={{ color: '#ededed' }}>Finanzas</span>
-        <span className="text-[9px] font-bold tracking-[0.2em]" style={{ color: '#444' }}>JAH</span>
+        <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Finanzas</span>
+        <span className="text-[9px] font-bold tracking-[0.2em]" style={{ color: 'var(--text-faint)' }}>JAH</span>
       </div>
-
       <div className="hidden md:block" />
 
-      {/* Tipo de cambio */}
       <div className="flex items-center gap-2">
         {rates.mep ? (
           <div
             className="flex items-center gap-2 rounded-lg px-3 py-1.5"
-            style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+            style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}
           >
-            <TrendingUp size={12} style={{ color: '#7c6ff7' }} />
-            <span className="text-xs" style={{ color: '#666' }}>MEP</span>
-            <span className="text-xs font-semibold" style={{ color: '#ededed' }}>{formatARS(rates.mep)}</span>
+            <TrendingUp size={12} style={{ color: 'var(--accent)' }} />
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>MEP</span>
+            <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{formatARS(rates.mep)}</span>
             {rates.lastUpdate && (
-              <span className="text-xs hidden sm:inline" style={{ color: '#444' }}>· {rates.lastUpdate}</span>
+              <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-faint)' }}>· {rates.lastUpdate}</span>
             )}
           </div>
         ) : (
-          <div className="h-7 w-28 rounded-lg animate-pulse" style={{ background: '#1a1a1a' }} />
+          <div className="h-7 w-28 rounded-lg animate-pulse" style={{ background: 'var(--surface-elevated)' }} />
         )}
         <button
           onClick={fetchRates}
           disabled={loading}
-          className="p-1.5 rounded-lg transition-colors hover:bg-white/5"
-          style={{ color: '#555' }}
+          className="p-1.5 rounded-lg transition-colors"
+          style={{ color: 'var(--text-muted)' }}
           title="Actualizar"
         >
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
