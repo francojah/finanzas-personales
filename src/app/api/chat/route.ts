@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       model: anthropic('claude-haiku-4-5'),
       system,
       messages,
-      maxTokens: 1024,
+      maxOutputTokens: 1024,
       temperature: 0.7,
     })
 
