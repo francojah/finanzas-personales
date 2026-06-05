@@ -79,15 +79,17 @@ export default function TransactionsPage() {
     <div className="max-w-2xl mx-auto space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Movimientos</h1>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Movimientos</h1>
         <div className="flex items-center gap-2">
           {/* Toggle moneda */}
-          <div className="flex rounded-xl border border-slate-200 overflow-hidden text-sm">
+          <div className="flex rounded-xl overflow-hidden" style={{ border: '1.5px solid var(--border)' }}>
             {(['ARS', 'USD'] as const).map(c => (
               <button key={c} onClick={() => setDisplayCurrency(c)}
-                className={cn('px-3 py-1.5 font-medium transition-colors',
-                  displayCurrency === c ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-50'
-                )}>
+                className="px-3 py-1.5 text-sm font-semibold transition-colors"
+                style={displayCurrency === c
+                  ? { background: 'var(--accent)', color: '#fff' }
+                  : { background: 'var(--surface)', color: 'var(--text-muted)' }
+                }>
                 {c}
               </button>
             ))}
@@ -120,41 +122,38 @@ export default function TransactionsPage() {
 
       {/* Resumen del período */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="card !p-3 text-center">
-          <p className="text-xs text-slate-500 mb-1">Ingresos</p>
-          <p className="text-base font-bold text-green-600">{fmt(totalIncome)}</p>
-        </div>
-        <div className="card !p-3 text-center">
-          <p className="text-xs text-slate-500 mb-1">Gastos</p>
-          <p className="text-base font-bold text-red-500">{fmt(totalExpense)}</p>
-        </div>
-        <div className="card !p-3 text-center">
-          <p className="text-xs text-slate-500 mb-1">Balance</p>
-          <p className={cn('text-base font-bold', totalIncome - totalExpense >= 0 ? 'text-slate-900' : 'text-red-500')}>
-            {fmt(totalIncome - totalExpense)}
-          </p>
-        </div>
+        {[
+          { label: 'Ingresos', value: fmt(totalIncome), color: 'var(--income)' },
+          { label: 'Gastos',   value: fmt(totalExpense), color: 'var(--expense)' },
+          { label: 'Balance',  value: fmt(totalIncome - totalExpense), color: totalIncome - totalExpense >= 0 ? 'var(--text-primary)' : 'var(--expense)' },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="rounded-xl p-3 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
+            <p className="text-base font-bold" style={{ color }}>{value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Filtros */}
       <div className="flex gap-2 flex-wrap">
         {TYPE_FILTERS.map(f => (
           <button key={f.value} onClick={() => setTypeFilter(f.value)}
-            className={cn('px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border',
-              typeFilter === f.value
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-            )}>
+            className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={typeFilter === f.value
+              ? { background: 'var(--accent)', color: '#fff', border: '1px solid var(--accent)' }
+              : { background: 'var(--surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
+            }>
             {f.label}
           </button>
         ))}
         <div className="flex-1 min-w-[160px] relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar..."
-            className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg outline-none focus:border-indigo-400 bg-white"
+            className="w-full pl-8 pr-3 py-1.5 text-sm rounded-lg outline-none"
+            style={{ border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-primary)' }}
           />
         </div>
       </div>
@@ -163,16 +162,17 @@ export default function TransactionsPage() {
       {loading ? (
         <div className="space-y-2">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse" />
+            <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }} />
           ))}
         </div>
       ) : transactions.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-slate-400 text-lg mb-2">Sin movimientos</p>
-          <p className="text-slate-400 text-sm mb-6">Registrá tu primer movimiento</p>
+        <div className="text-center py-16 rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <p className="text-lg mb-2" style={{ color: 'var(--text-faint)' }}>Sin movimientos</p>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-faint)' }}>Registrá tu primer movimiento</p>
           <button
             onClick={() => router.push('/transactions/new')}
-            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 text-white px-5 py-2.5 rounded-xl font-semibold"
+            style={{ background: 'var(--accent)' }}
           >
             <Plus size={16} /> Nuevo movimiento
           </button>
@@ -183,11 +183,11 @@ export default function TransactionsPage() {
             <div key={date}>
               {/* Separador de fecha */}
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-faint)' }}>
                   {formatDateShort(date)}
                 </span>
-                <div className="flex-1 h-px bg-slate-100" />
-                <span className="text-xs text-slate-400">
+                <div className="flex-1 h-px" style={{ background: 'var(--border-subtle)' }} />
+                <span className="text-xs" style={{ color: 'var(--text-faint)' }}>
                   {fmt(txs.reduce((s, t) => {
                     if (t.type === 'income') return s + (displayCurrency === 'ARS' ? t.amount_ars : t.amount_usd)
                     if (t.type === 'expense') return s - (displayCurrency === 'ARS' ? t.amount_ars : t.amount_usd)
@@ -258,32 +258,33 @@ function TransactionRow({
     : tx.type === 'expense' ? ArrowDownCircle
     : ArrowLeftRight
 
-  const iconColor = tx.type === 'income' ? 'text-green-500'
-    : tx.type === 'expense' ? 'text-red-400'
-    : 'text-indigo-400'
-
-  const amountColor = tx.type === 'income' ? 'text-green-600'
-    : tx.type === 'expense' ? 'text-red-500'
-    : 'text-indigo-600'
-
+  const typeColor = tx.type === 'income' ? 'var(--income)'
+    : tx.type === 'expense' ? 'var(--expense)'
+    : 'var(--accent-icon)'
+  const typeBg = tx.type === 'income' ? 'var(--income-bg)'
+    : tx.type === 'expense' ? 'var(--expense-bg)'
+    : 'var(--accent-bg)'
   const amountPrefix = tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : ''
 
   return (
     <button
       onClick={onClick}
-      className="w-full card !p-3 flex items-center gap-3 hover:shadow-sm hover:border-slate-300 transition-all text-left active:scale-[0.99]"
+      className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all active:scale-[0.99]"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent-border)')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
     >
       {/* Ícono */}
-      <div className={cn('p-2 rounded-xl bg-slate-50', iconColor)}>
-        <Icon size={18} />
+      <div className="p-2 rounded-xl shrink-0" style={{ background: typeBg }}>
+        <Icon size={18} style={{ color: typeColor }} />
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-800 truncate">
+        <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
           {tx.description || (tx.category as any)?.name || (tx.type === 'transfer' ? 'Transferencia' : 'Sin descripción')}
         </p>
-        <p className="text-xs text-slate-400 truncate">
+        <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
           {[
             tx.description ? (tx.category as any)?.name : null,
             (tx.subcategory as any)?.name,
@@ -294,11 +295,10 @@ function TransactionRow({
 
       {/* Monto */}
       <div className="text-right shrink-0">
-        <p className={cn('text-sm font-bold', amountColor)}>
+        <p className="text-sm font-bold" style={{ color: typeColor }}>
           {amountPrefix}{fmt(amount)}
         </p>
-        {/* Monto en otra moneda */}
-        <p className="text-xs text-slate-400">
+        <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
           {displayCurrency === 'ARS' ? formatUSD(tx.amount_usd) : formatARS(tx.amount_ars)}
         </p>
       </div>

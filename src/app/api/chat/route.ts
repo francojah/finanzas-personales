@@ -2,6 +2,8 @@ import { streamText } from 'ai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createClient } from '@/lib/supabase/server'
 import { buildFinancialContext, buildSystemPrompt } from '@/lib/financial-context'
+import { rateLimit } from '@/lib/rate-limit'
+import { headers } from 'next/headers'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -9,6 +11,17 @@ export const maxDuration = 30
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json()
+
+    // Rate limiting: 20 mensajes por minuto por IP
+    const headersList = await headers()
+    const ip = headersList.get('x-forwarded-for')?.split(',')[0] ?? 'unknown'
+    const { allowed } = rateLimit({ key: `guru:${ip}`, limit: 20, windowMs: 60_000 })
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Demasiadas consultas. Esperá un momento.' }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {

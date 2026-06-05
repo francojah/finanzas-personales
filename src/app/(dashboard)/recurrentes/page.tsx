@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Repeat, Plus, Trash2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
+import { Repeat, Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Landmark, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 const FREQ_LABELS: Record<string, string> = {
   weekly: 'Semanal', monthly: 'Mensual', yearly: 'Anual',
@@ -23,23 +24,42 @@ interface RecurringTx {
   account: { name: string } | null
 }
 
+interface ActiveLoan {
+  id: string
+  name: string
+  lender: string | null
+  monthly_payment: number
+  currency: 'ARS' | 'USD'
+  paid_installments: number
+  total_installments: number | null
+}
+
 export default function RecurrentesPage() {
   const router = useRouter()
   const supabase = createClient()
   const [items, setItems] = useState<RecurringTx[]>([])
+  const [loans, setLoans] = useState<ActiveLoan[]>([])
   const [loading, setLoading] = useState(true)
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase
-      .from('transactions')
-      .select('*, category:categories(name,color), account:accounts!account_id(name)')
-      .eq('is_recurring', true)
-      .is('parent_transaction_id', null)
-      .neq('type', 'transfer')
-      .order('recurrence_frequency')
-      .order('created_at', { ascending: false })
-    setItems((data ?? []) as RecurringTx[])
+    const [{ data: txData }, { data: loanData }] = await Promise.all([
+      supabase
+        .from('transactions')
+        .select('*, category:categories(name,color), account:accounts!account_id(name)')
+        .eq('is_recurring', true)
+        .is('parent_transaction_id', null)
+        .neq('type', 'transfer')
+        .order('recurrence_frequency')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('loans')
+        .select('id, name, lender, monthly_payment, currency, paid_installments, total_installments')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false }),
+    ])
+    setItems((txData ?? []) as RecurringTx[])
+    setLoans((loanData ?? []) as ActiveLoan[])
     setLoading(false)
   }
 
@@ -151,6 +171,48 @@ export default function RecurrentesPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {/* ── Cuotas de préstamos ── */}
+      {loans.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <Landmark size={13} style={{ color: '#ef4444' }} />
+            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-faint)' }}>
+              Cuotas de préstamos — {loans.length} activo{loans.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {loans.map(loan => {
+              const rem = loan.total_installments ? loan.total_installments - loan.paid_installments : null
+              const fmt = loan.currency === 'USD' ? formatUSD : formatARS
+              return (
+                <button
+                  key={loan.id}
+                  onClick={() => router.push(`/loans/${loan.id}`)}
+                  className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left"
+                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                    <Landmark size={16} style={{ color: '#ef4444' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{loan.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {loan.lender ?? 'Préstamo'}
+                      {rem !== null ? ` · ${rem} cuota${rem !== 1 ? 's' : ''} restante${rem !== 1 ? 's' : ''}` : ''}
+                    </p>
+                  </div>
+                  <p className="font-bold text-sm shrink-0" style={{ color: '#ef4444' }}>
+                    -{fmt(loan.monthly_payment)}
+                  </p>
+                  <ChevronRight size={14} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

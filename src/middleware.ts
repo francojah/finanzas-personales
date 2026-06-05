@@ -34,6 +34,7 @@ export async function middleware(request: NextRequest) {
   // Rutas públicas que no requieren auth
   const publicRoutes = [
     '/welcome',
+    '/seguridad',
     '/auth/login',
     '/auth/register',
     '/auth/forgot-password',

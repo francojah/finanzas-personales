@@ -282,6 +282,7 @@ export default function WelcomePage() {
             <Link href="/auth/login" style={{ color: 'var(--text-faint)' }}>Iniciar sesión</Link>
             <Link href="/auth/register" style={{ color: 'var(--text-faint)' }}>Registrarse</Link>
             <Link href="/pricing" style={{ color: 'var(--text-faint)' }}>Precios</Link>
+            <Link href="/seguridad" style={{ color: 'var(--text-faint)' }}>Seguridad</Link>
           </div>
         </div>
       </footer>

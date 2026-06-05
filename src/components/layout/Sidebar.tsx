@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, ArrowLeftRight, TrendingUp,
   Target, CreditCard, Users, Settings, LogOut,
-  Building2, Percent, Sparkles, FileText, Landmark, Lock, Zap, Shield,
+  Building2, Percent, Sparkles, FileText, Landmark, Lock, Zap, Shield, PiggyBank,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -34,8 +34,9 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Dashboard',   href: '/',             icon: LayoutDashboard },
       { label: 'Movimientos', href: '/transactions', icon: ArrowLeftRight  },
-      { label: 'Tarjetas',    href: '/credit-cards', icon: CreditCard      },
-      { label: 'Préstamos',   href: '/loans',        icon: Landmark,       premiumFeature: 'loans'    },
+      { label: 'Tarjetas',      href: '/credit-cards', icon: CreditCard  },
+      { label: 'Préstamos',    href: '/loans',        icon: Landmark,    premiumFeature: 'loans'    },
+      { label: 'Presupuesto',  href: '/budget',       icon: PiggyBank   },
     ],
   },
   {
