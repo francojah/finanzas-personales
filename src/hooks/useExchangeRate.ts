@@ -5,30 +5,33 @@ import { useState, useEffect, useCallback } from 'react'
 interface ExchangeRates {
   mep: number | null
   ccl: number | null
+  blue: number | null
+  oficial: number | null
   loading: boolean
   error: boolean
   lastUpdate: Date | null
   refresh: () => void
 }
 
-// Cache simple en memoria para no hacer fetch en cada render
-let cachedRate: { mep: number; ccl: number; ts: number } | null = null
+let cachedRate: { mep: number; ccl: number; blue: number; oficial: number; ts: number } | null = null
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutos
 
 export function useExchangeRate(): ExchangeRates {
-  const [mep, setMep] = useState<number | null>(cachedRate?.mep ?? null)
-  const [ccl, setCcl] = useState<number | null>(cachedRate?.ccl ?? null)
-  const [loading, setLoading] = useState(!cachedRate)
-  const [error, setError] = useState(false)
+  const [rates, setRates] = useState({
+    mep:     cachedRate?.mep     ?? null as number | null,
+    ccl:     cachedRate?.ccl     ?? null as number | null,
+    blue:    cachedRate?.blue    ?? null as number | null,
+    oficial: cachedRate?.oficial ?? null as number | null,
+  })
+  const [loading, setLoading]     = useState(!cachedRate)
+  const [error, setError]         = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(
     cachedRate ? new Date(cachedRate.ts) : null
   )
 
-  const fetch = useCallback(async () => {
-    // Usar cache si es reciente
+  const fetchRates = useCallback(async () => {
     if (cachedRate && Date.now() - cachedRate.ts < CACHE_TTL) {
-      setMep(cachedRate.mep)
-      setCcl(cachedRate.ccl)
+      setRates({ mep: cachedRate.mep, ccl: cachedRate.ccl, blue: cachedRate.blue, oficial: cachedRate.oficial })
       setLoading(false)
       return
     }
@@ -37,41 +40,46 @@ export function useExchangeRate(): ExchangeRates {
     setError(false)
 
     try {
-      const res = await window.fetch('https://api.bluelytics.com.ar/v2/latest')
-      const data = await res.json()
+      // dolarapi.com — cotizaciones oficiales MEP, CCL, blue, oficial
+      const res  = await window.fetch('https://dolarapi.com/v1/dolares')
+      const list = await res.json() as { nombre: string; compra: number; venta: number }[]
 
-      // Bluelytics provee blue. Para MEP/CCL usamos como aproximación.
-      // TODO: reemplazar con API MEP real cuando esté disponible
-      const rateValue = data.blue?.value_sell ?? data.oficial?.value_sell ?? 0
+      const find = (name: string) => list.find(d => d.nombre.toLowerCase().includes(name.toLowerCase()))?.venta ?? null
 
-      cachedRate = { mep: rateValue, ccl: rateValue * 1.015, ts: Date.now() }
+      const mep     = find('mep')
+      const ccl     = find('contado con liquidación') ?? find('ccl') ?? find('contado')
+      const blue    = find('blue') ?? find('informal')
+      const oficial = find('oficial')
 
-      setMep(cachedRate.mep)
-      setCcl(cachedRate.ccl)
+      if (!mep) throw new Error('No MEP data')
+
+      cachedRate = { mep: mep!, ccl: ccl ?? mep! * 1.02, blue: blue ?? mep!, oficial: oficial ?? mep! * 0.85, ts: Date.now() }
+      setRates({ mep: cachedRate.mep, ccl: cachedRate.ccl, blue: cachedRate.blue, oficial: cachedRate.oficial })
       setLastUpdate(new Date())
     } catch {
-      setError(true)
+      // Fallback: Bluelytics
+      try {
+        const res2  = await window.fetch('https://api.bluelytics.com.ar/v2/latest')
+        const data2 = await res2.json()
+        const blue  = data2.blue?.value_sell ?? 0
+        const of    = data2.oficial?.value_sell ?? 0
+        cachedRate  = { mep: blue * 0.97, ccl: blue * 1.01, blue, oficial: of, ts: Date.now() }
+        setRates({ mep: cachedRate.mep, ccl: cachedRate.ccl, blue: cachedRate.blue, oficial: cachedRate.oficial })
+        setLastUpdate(new Date())
+      } catch {
+        setError(true)
+      }
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => {
-    fetch()
-  }, [fetch])
+  useEffect(() => { fetchRates() }, [fetchRates])
 
-  return { mep, ccl, loading, error, lastUpdate, refresh: fetch }
+  return { ...rates, loading, error, lastUpdate, refresh: fetchRates }
 }
 
-// Helper para convertir usando el hook
-export function convertAmount(
-  amount: number,
-  fromCurrency: 'ARS' | 'USD',
-  rate: number
-): { ars: number; usd: number } {
-  if (fromCurrency === 'USD') {
-    return { usd: amount, ars: amount * rate }
-  } else {
-    return { ars: amount, usd: rate > 0 ? amount / rate : 0 }
-  }
+export function convertAmount(amount: number, fromCurrency: 'ARS' | 'USD', rate: number): { ars: number; usd: number } {
+  if (fromCurrency === 'USD') return { usd: amount, ars: amount * rate }
+  return { ars: amount, usd: rate > 0 ? amount / rate : 0 }
 }

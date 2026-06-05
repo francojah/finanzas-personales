@@ -1,30 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { TrendingUp, RefreshCw, Search, Command } from 'lucide-react'
 import { formatARS } from '@/lib/utils'
-
-interface ExchangeRate { mep: number | null; ccl: number | null; lastUpdate: string | null }
+import { useExchangeRate } from '@/hooks/useExchangeRate'
 
 export function TopBar() {
-  const [rates, setRates] = useState<ExchangeRate>({ mep: null, ccl: null, lastUpdate: null })
-  const [loading, setLoading] = useState(false)
+  const { mep, blue, loading, lastUpdate, refresh } = useExchangeRate()
 
-  async function fetchRates() {
-    setLoading(true)
-    try {
-      const res = await fetch('https://api.bluelytics.com.ar/v2/latest')
-      const data = await res.json()
-      setRates({
-        mep: data.blue?.value_sell ?? null,
-        ccl: data.blue?.value_sell ?? null,
-        lastUpdate: new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
-      })
-    } catch { /* silencioso */ }
-    finally { setLoading(false) }
-  }
-
-  useEffect(() => { fetchRates() }, [])
+  const timeLabel = lastUpdate
+    ? lastUpdate.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    : null
 
   return (
     <header
@@ -42,13 +27,16 @@ export function TopBar() {
         <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Finanzas</span>
         <span className="text-[9px] font-bold tracking-[0.2em]" style={{ color: 'var(--text-faint)' }}>JAH</span>
       </div>
+
       <div className="hidden md:block" />
 
-      <div className="flex items-center gap-3">
-        {/* Search button — triggers GlobalSearch modal */}
+      {/* Search + cotizaciones */}
+      <div className="flex items-center gap-2">
+
+        {/* Search */}
         <button
           onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
-          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors"
+          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm"
           style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
           title="Búsqueda global (⌘K)"
         >
@@ -58,30 +46,43 @@ export function TopBar() {
             <Command size={9} />K
           </span>
         </button>
-      </div>
 
-      <div className="flex items-center gap-2">
-        {rates.mep ? (
+        {/* Cotizaciones */}
+        {mep ? (
           <div
-            className="flex items-center gap-2 rounded-lg px-3 py-1.5"
-            style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}
+            className="flex items-center gap-3 rounded-lg px-3 py-1.5"
+            style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)' }}
           >
             <TrendingUp size={12} style={{ color: 'var(--accent)' }} />
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>MEP</span>
-            <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{formatARS(rates.mep)}</span>
-            {rates.lastUpdate && (
-              <span className="text-xs hidden sm:inline" style={{ color: 'var(--text-faint)' }}>· {rates.lastUpdate}</span>
+
+            {/* MEP */}
+            <div className="flex items-center gap-1.5 text-xs">
+              <span style={{ color: 'var(--text-faint)' }}>MEP</span>
+              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{formatARS(mep)}</span>
+            </div>
+
+            {/* Blue — solo desktop, si difiere más del 1% del MEP */}
+            {blue && Math.abs(blue - mep) / mep > 0.01 && (
+              <div className="hidden sm:flex items-center gap-1.5 text-xs" style={{ borderLeft: '1px solid var(--border)', paddingLeft: '0.75rem' }}>
+                <span style={{ color: 'var(--text-faint)' }}>Blue</span>
+                <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>{formatARS(blue)}</span>
+              </div>
+            )}
+
+            {timeLabel && (
+              <span className="text-[10px] hidden md:inline" style={{ color: 'var(--text-faint)' }}>{timeLabel}</span>
             )}
           </div>
         ) : (
-          <div className="h-7 w-28 rounded-lg animate-pulse" style={{ background: 'var(--surface-elevated)' }} />
+          <div className="h-7 w-36 rounded-lg animate-pulse" style={{ background: 'var(--surface-elevated)' }} />
         )}
+
         <button
-          onClick={fetchRates}
+          onClick={refresh}
           disabled={loading}
           className="p-1.5 rounded-lg transition-colors"
           style={{ color: 'var(--text-muted)' }}
-          title="Actualizar"
+          title="Actualizar cotización"
         >
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
         </button>
