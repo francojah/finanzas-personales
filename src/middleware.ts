@@ -32,18 +32,30 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Rutas públicas que no requieren auth
-  const publicRoutes = ['/auth/login', '/auth/register', '/auth/forgot-password']
+  const publicRoutes = [
+    '/welcome',
+    '/auth/login',
+    '/auth/register',
+    '/auth/forgot-password',
+  ]
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
-  // Si no está autenticado y no es ruta pública → redirigir a login
+  // Si no está autenticado y no es ruta pública → redirigir a landing
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
+    url.pathname = '/welcome'
     return NextResponse.redirect(url)
   }
 
-  // Si está autenticado y va a una ruta de auth → redirigir al dashboard
-  if (user && isPublicRoute) {
+  // Si está autenticado y va a la landing → redirigir al dashboard
+  if (user && pathname === '/welcome') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
+  // Si está autenticado y va a login/register → redirigir al dashboard
+  if (user && (pathname.startsWith('/auth/login') || pathname.startsWith('/auth/register'))) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)

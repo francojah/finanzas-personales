@@ -17,6 +17,7 @@ import { startOfMonth, endOfMonth, subMonths, format, isSameMonth } from 'date-f
 import { es } from 'date-fns/locale'
 import { AlertsBanner } from '@/components/shared/AlertsBanner'
 import { TransactionDrawer } from '@/components/shared/TransactionDrawer'
+import { OnboardingTip } from '@/components/shared/OnboardingTip'
 import { MonthPicker } from '@/components/shared/MonthPicker'
 import { useExchangeRate } from '@/hooks/useExchangeRate'
 import { BudgetOverview } from '@/components/dashboard/BudgetOverview'
@@ -200,6 +201,12 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      <OnboardingTip
+        tipId="dashboard"
+        title="¡Bienvenido a Finanzapp!"
+        description="Empezá cargando tu primera cuenta en Configuración → Cuentas. Después registrá un movimiento y el dashboard se va a poblar solo."
+        cta={{ label: 'Configurar mi cuenta', href: '/settings/accounts' }}
+      />
       <AlertsBanner />
       <RecurringBanner />
 

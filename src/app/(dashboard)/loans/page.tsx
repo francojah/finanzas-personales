@@ -6,6 +6,7 @@ import { Plus, Landmark, ChevronRight, CheckCircle2, AlertCircle, Loader2 } from
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD } from '@/lib/utils'
 import { PlanGate } from '@/components/shared/PlanGate'
+import { OnboardingTip } from '@/components/shared/OnboardingTip'
 
 interface Loan {
   id: string
@@ -84,6 +85,14 @@ function LoansPageContent() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
+
+      <OnboardingTip
+        tipId="loans"
+        title="Seguimiento de préstamos"
+        description="Registrá cualquier préstamo que hayas tomado — banco, tarjeta, personal. Finanzapp te recuerda cada cuota y te muestra cuánto te falta pagar."
+        cta={{ label: 'Registrar préstamo', href: '/loans/new' }}
+        accent
+      />
 
       {/* Header */}
       <div className="flex items-center justify-between">

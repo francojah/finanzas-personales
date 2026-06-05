@@ -8,6 +8,7 @@ import { formatARS, formatUSD, cn } from '@/lib/utils'
 import { useExchangeRate } from '@/hooks/useExchangeRate'
 import type { Project } from '@/types/database'
 import { PlanGate } from '@/components/shared/PlanGate'
+import { OnboardingTip } from '@/components/shared/OnboardingTip'
 
 interface ProjectWithProgress extends Project {
   spent: number      // para proyectos de gasto
@@ -71,6 +72,14 @@ function ProjectsPageContent() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
+
+      <OnboardingTip
+        tipId="projects"
+        title="Metas de ahorro y gasto"
+        description="Creá una meta para tu próximo objetivo: vacaciones, un auto, fondo de emergencia. Finanzapp te muestra cuánto te falta y a qué ritmo vas."
+        cta={{ label: 'Crear primera meta', href: '/projects/new' }}
+        accent
+      />
 
       {/* Header */}
       <div className="flex items-center justify-between">

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD, formatPercent } from '@/lib/utils'
 import { useExchangeRate } from '@/hooks/useExchangeRate'
 import { PlanGate } from '@/components/shared/PlanGate'
+import { OnboardingTip } from '@/components/shared/OnboardingTip'
 import type { InvestmentPosition } from '@/types/database'
 
 const ASSET_LABELS: Record<string, string> = {
@@ -103,6 +104,14 @@ function InvestmentsContent() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
+
+      <OnboardingTip
+        tipId="investments"
+        title="Tu portfolio de inversiones"
+        description="Agregá acciones, CEDEARs, crypto, plazos fijos o dólares físicos. Los precios de acciones y crypto se actualizan automáticamente."
+        cta={{ label: 'Agregar primera inversión', href: '/investments/new' }}
+        accent
+      />
 
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
