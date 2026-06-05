@@ -42,7 +42,8 @@ async function getPreapproval(preapprovalId: string) {
 async function findUserByEmail(email: string): Promise<string | null> {
   const supabase = getAdminClient()
   const { data } = await supabase.auth.admin.listUsers()
-  const user = data?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase())
+  const users = (data as any)?.users ?? []
+  const user = users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
   return user?.id ?? null
 }
 

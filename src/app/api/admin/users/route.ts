@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     // Traer todos los usuarios de auth
     const { data: authData } = await admin.auth.admin.listUsers({ perPage: 200 })
-    const authUsers = authData?.users ?? []
+    const authUsers: any[] = (authData as any)?.users ?? []
 
     // Traer perfiles con plan
     const { data: profiles } = await admin
