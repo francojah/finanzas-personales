@@ -18,6 +18,7 @@ import { es } from 'date-fns/locale'
 import { AlertsBanner } from '@/components/shared/AlertsBanner'
 import { TransactionDrawer } from '@/components/shared/TransactionDrawer'
 import { MonthPicker } from '@/components/shared/MonthPicker'
+import { useExchangeRate } from '@/hooks/useExchangeRate'
 import type { Transaction } from '@/types/database'
 
 interface MonthSummary { income_ars: number; expense_ars: number; income_usd: number; expense_usd: number }
@@ -37,6 +38,7 @@ const tooltipStyle = {
 export default function DashboardPage() {
   const router = useRouter()
   const supabase = createClient()
+  const { mep } = useExchangeRate()
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('ARS')
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -47,8 +49,9 @@ export default function DashboardPage() {
   const [barData, setBarData]       = useState<MonthBar[]>([])
   const [userName, setUserName]     = useState('')
   const [selectedTxId, setSelectedTxId] = useState<string | null>(null)
-  const [patrimonioUSD, setPatrimonioUSD] = useState(0)
-  const [patrimonioARS, setPatrimonioARS] = useState(0)
+  // Patrimonio: totales crudos (se convierten con MEP en render)
+  const [rawAssetsUSD, setRawAssetsUSD] = useState(0)
+  const [rawAssetsARS, setRawAssetsARS] = useState(0)
   const [inversionesUSD, setInversionesUSD] = useState(0)
 
   useEffect(() => { loadDashboard() }, [selectedDate])
@@ -124,8 +127,8 @@ export default function DashboardPage() {
       // Patrimonio
       const { data: assets } = await supabase.from('assets').select('value, currency').eq('is_active', true)
       if (assets) {
-        setPatrimonioUSD((assets as any[]).filter(a => a.currency === 'USD').reduce((s: number, a: any) => s + a.value, 0))
-        setPatrimonioARS((assets as any[]).filter(a => a.currency === 'ARS').reduce((s: number, a: any) => s + a.value, 0))
+        setRawAssetsUSD((assets as any[]).filter(a => a.currency === 'USD').reduce((s: number, a: any) => s + a.value, 0))
+        setRawAssetsARS((assets as any[]).filter(a => a.currency === 'ARS').reduce((s: number, a: any) => s + a.value, 0))
       }
 
       // Inversiones
@@ -138,6 +141,11 @@ export default function DashboardPage() {
       setLoading(false)
     }
   }
+
+  // Patrimonio convertido con MEP
+  const patrimonioUSD = rawAssetsUSD + (mep ? rawAssetsARS / mep : 0)
+  const patrimonioARS = rawAssetsARS + (mep ? rawAssetsUSD * mep : 0)
+  const inversionesARS = mep ? inversionesUSD * mep : 0
 
   const balance_ars    = thisMonth.income_ars - thisMonth.expense_ars
   const balance_usd    = thisMonth.income_usd - thisMonth.expense_usd
@@ -228,9 +236,14 @@ export default function DashboardPage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Patrimonio</p>
-            {patrimonioUSD > 0 && <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatUSD(patrimonioUSD)}</p>}
-            {patrimonioARS > 0 && <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{formatARS(patrimonioARS)}</p>}
-            {!patrimonioUSD && !patrimonioARS && <p className="text-sm" style={{ color: 'var(--text-faint)' }}>Sin activos registrados</p>}
+            {patrimonioUSD > 0 || patrimonioARS > 0 ? (
+              <>
+                <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatUSD(patrimonioUSD)}</p>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{formatARS(patrimonioARS)}</p>
+              </>
+            ) : (
+              <p className="text-sm" style={{ color: 'var(--text-faint)' }}>Sin activos registrados</p>
+            )}
           </div>
           <ChevronRight size={14} style={{ color: 'var(--text-faint)' }} />
         </button>
@@ -245,10 +258,14 @@ export default function DashboardPage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Inversiones</p>
-            {inversionesUSD > 0
-              ? <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatUSD(inversionesUSD)}</p>
-              : <p className="text-sm" style={{ color: 'var(--text-faint)' }}>Sin posiciones activas</p>
-            }
+            {inversionesUSD > 0 ? (
+              <>
+                <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatUSD(inversionesUSD)}</p>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{formatARS(inversionesARS)}</p>
+              </>
+            ) : (
+              <p className="text-sm" style={{ color: 'var(--text-faint)' }}>Sin posiciones activas</p>
+            )}
           </div>
           <ChevronRight size={14} style={{ color: 'var(--text-faint)' }} />
         </button>

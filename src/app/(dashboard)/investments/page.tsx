@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, RefreshCw, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { formatARS, formatUSD, formatPercent, cn } from '@/lib/utils'
+import { formatARS, formatUSD, formatPercent } from '@/lib/utils'
 import { useExchangeRate } from '@/hooks/useExchangeRate'
 import type { InvestmentPosition } from '@/types/database'
 
@@ -13,11 +13,10 @@ const ASSET_LABELS: Record<string, string> = {
   bond: 'Bonos', on: 'ONs', fci: 'FCI',
   cedear: 'CEDEARs', fixed_term: 'Plazo Fijo',
 }
-
 const ASSET_COLORS: Record<string, string> = {
-  stock: '#6366f1', etf: '#3b82f6', crypto: '#f59e0b',
-  bond: '#10b981', on: '#06b6d4', fci: '#8b5cf6',
-  cedear: '#ec4899', fixed_term: '#64748b',
+  stock: '#7c6ff7', etf: '#60a5fa', crypto: '#f59e0b',
+  bond: '#4ade80', on: '#22d3ee', fci: '#c084fc',
+  cedear: '#f472b6', fixed_term: '#94a3b8',
 }
 
 export default function InvestmentsPage() {
@@ -42,10 +41,9 @@ export default function InvestmentsPage() {
 
   useEffect(() => { load() }, [load])
 
-  // Actualizar precios de todas las posiciones
   async function refreshPrices() {
     setRefreshing(true)
-    const updates: Promise<void>[] = positions
+    const updates = positions
       .filter(p => p.ticker && p.price_source !== 'manual' && p.asset_type !== 'fixed_term')
       .map(async (pos) => {
         try {
@@ -53,49 +51,38 @@ export default function InvestmentsPage() {
           const res = await fetch(`/api/prices?ticker=${pos.ticker}&source=${source}`)
           if (!res.ok) return
           const { price } = await res.json()
-          await supabase
-            .from('investment_positions')
-            .update({
-              current_price: price,
-              current_price_usd: price, // Yahoo retorna en USD para acciones internacionales
-              last_price_update: new Date().toISOString(),
-            })
-            .eq('id', pos.id)
+          await supabase.from('investment_positions').update({
+            current_price: price, current_price_usd: price,
+            last_price_update: new Date().toISOString(),
+          }).eq('id', pos.id)
         } catch { /* silencioso */ }
       })
-
     await Promise.all(updates)
     await load()
     setRefreshing(false)
   }
 
-  // ── Cálculos ────────────────────────────────────────────────
   function positionValueUSD(pos: InvestmentPosition): number {
     if (pos.asset_type === 'fixed_term') {
-      // Plazo fijo: calcular con TNA
       if (!pos.fixed_term_tna || !pos.fixed_term_start || !pos.fixed_term_end) {
         return pos.quantity * pos.avg_purchase_price
       }
-      const start = new Date(pos.fixed_term_start)
-      const end = new Date(pos.fixed_term_end)
-      const days = Math.max(0, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)))
-      const interest = pos.quantity * pos.avg_purchase_price * (pos.fixed_term_tna / 100) * (days / 365)
-      const totalARS = pos.quantity * pos.avg_purchase_price + interest
+      const days = Math.max(0, Math.ceil(
+        (new Date(pos.fixed_term_end).getTime() - new Date(pos.fixed_term_start).getTime()) / 86400000
+      ))
+      const totalARS = pos.quantity * pos.avg_purchase_price * (1 + (pos.fixed_term_tna / 100) * (days / 365))
       return mep ? totalARS / mep : 0
     }
-
-    const price = pos.current_price_usd ?? pos.avg_purchase_price
-    return pos.quantity * price
+    return pos.quantity * (pos.current_price_usd ?? pos.avg_purchase_price)
   }
 
   function positionReturnPct(pos: InvestmentPosition): number | null {
     if (pos.asset_type === 'fixed_term') return pos.fixed_term_tna ?? null
-    if (pos.manual_return_pct !== null && pos.manual_return_pct !== undefined) return pos.manual_return_pct
+    if (pos.manual_return_pct != null) return pos.manual_return_pct
     if (!pos.current_price_usd) return null
     return ((pos.current_price_usd - pos.avg_purchase_price) / pos.avg_purchase_price) * 100
   }
 
-  // Agrupar por tipo de activo
   const grouped = positions.reduce<Record<string, InvestmentPosition[]>>((acc, p) => {
     if (!acc[p.asset_type]) acc[p.asset_type] = []
     acc[p.asset_type].push(p)
@@ -111,51 +98,60 @@ export default function InvestmentsPage() {
     <div className="max-w-2xl mx-auto space-y-5">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Inversiones</h1>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Inversiones</h1>
         <div className="flex items-center gap-2">
           <button onClick={refreshPrices} disabled={refreshing}
-            className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors"
+            className="p-2 rounded-xl transition-colors"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
             title="Actualizar precios">
-            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+            <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
           </button>
-          <div className="flex rounded-xl border border-slate-200 overflow-hidden">
+          <div className="flex rounded-xl overflow-hidden" style={{ border: '1.5px solid var(--border)' }}>
             {(['USD', 'ARS'] as const).map(c => (
               <button key={c} onClick={() => setCurrency(c)}
-                className={cn('px-3 py-1.5 text-sm font-semibold transition-colors',
-                  currency === c ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-50'
-                )}>{c}</button>
+                className="px-3 py-1.5 text-sm font-semibold transition-colors"
+                style={currency === c
+                  ? { background: 'var(--accent)', color: '#fff' }
+                  : { background: 'var(--surface)', color: 'var(--text-muted)' }
+                }>{c}</button>
             ))}
           </div>
           <button onClick={() => router.push('/investments/new')}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">
-            <Plus size={15} /> Nueva
+            className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl"
+            style={{ background: 'var(--accent)' }}>
+            <Plus size={15} /> Nueva compra
           </button>
         </div>
       </div>
 
-      {/* Total portfolio */}
+      {/* Portfolio total */}
       {!loading && positions.length > 0 && (
-        <div className="card !p-5 bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-100">
-          <p className="text-sm text-indigo-600 font-medium mb-1">Portfolio total</p>
-          <p className="text-3xl font-bold text-indigo-800">{fmt(totalUSD)}</p>
-          <p className="text-sm text-indigo-400 mt-1">
+        <div className="rounded-2xl p-5" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--accent-icon)' }}>
+            Portfolio total
+          </p>
+          <p className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{fmt(totalUSD)}</p>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
             {currency === 'USD' ? formatARS(totalARS) : formatUSD(totalUSD)}
-            {mep && <span className="ml-2">· MEP {formatARS(mep)}</span>}
+            {mep && <span style={{ color: 'var(--text-faint)' }}> · MEP {formatARS(mep)}</span>}
           </p>
         </div>
       )}
 
       {loading ? (
         <div className="space-y-3">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-slate-100 rounded-xl animate-pulse" />)}
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-20 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }} />
+          ))}
         </div>
       ) : positions.length === 0 ? (
-        <div className="text-center py-16">
-          <TrendingUp size={40} className="text-slate-200 mx-auto mb-3" />
-          <p className="text-slate-400 mb-4">No hay posiciones registradas</p>
+        <div className="text-center py-16 rounded-2xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <TrendingUp size={40} className="mx-auto mb-3" style={{ color: 'var(--text-faint)' }} />
+          <p className="mb-4" style={{ color: 'var(--text-muted)' }}>No hay posiciones registradas</p>
           <button onClick={() => router.push('/investments/new')}
-            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700">
+            className="inline-flex items-center gap-2 text-white px-5 py-2.5 rounded-xl text-sm font-semibold"
+            style={{ background: 'var(--accent)' }}>
             <Plus size={15} /> Agregar posición
           </button>
         </div>
@@ -163,66 +159,69 @@ export default function InvestmentsPage() {
         <div className="space-y-5">
           {Object.entries(grouped).map(([type, items]) => {
             const groupTotal = items.reduce((s, p) => s + positionValueUSD(p), 0)
+            const color = ASSET_COLORS[type] ?? '#94a3b8'
             return (
               <div key={type}>
-                {/* Header grupo */}
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2 px-1">
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ASSET_COLORS[type] ?? '#94a3b8' }} />
-                    <span className="text-sm font-semibold text-slate-600">{ASSET_LABELS[type] ?? type}</span>
+                    <div className="w-2 h-2 rounded-full" style={{ background: color }} />
+                    <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                      {ASSET_LABELS[type] ?? type}
+                    </span>
                   </div>
-                  <span className="text-sm font-semibold text-slate-700">{fmt(groupTotal)}</span>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    {fmt(groupTotal)}
+                  </span>
                 </div>
 
-                {/* Posiciones del grupo */}
                 <div className="space-y-2">
                   {items.map(pos => {
-                    const valueUSD = positionValueUSD(pos)
+                    const valueUSD  = positionValueUSD(pos)
                     const returnPct = positionReturnPct(pos)
-                    const pnlUSD = pos.current_price_usd
-                      ? pos.quantity * (pos.current_price_usd - pos.avg_purchase_price)
-                      : null
-                    const hasPrice = !!pos.current_price_usd || pos.asset_type === 'fixed_term'
                     const isFixedTerm = pos.asset_type === 'fixed_term'
 
                     return (
                       <button
                         key={pos.id}
                         onClick={() => router.push(`/investments/${pos.id}`)}
-                        className="w-full card flex items-center gap-3 hover:shadow-sm hover:border-slate-300 transition-all text-left active:scale-[0.99]"
+                        className="w-full flex items-center gap-3 rounded-xl px-4 py-3.5 text-left transition-all"
+                        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+                        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent-border)')}
+                        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                       >
-                        {/* Color dot */}
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-xs"
-                          style={{ backgroundColor: ASSET_COLORS[pos.asset_type] + '20', color: ASSET_COLORS[pos.asset_type] }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold"
+                          style={{ background: color + '18', color }}>
                           {pos.ticker?.slice(0, 3) ?? '···'}
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-800 truncate">{pos.name}</p>
-                          <p className="text-xs text-slate-400">
+                          <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                            {pos.name}
+                          </p>
+                          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                             {isFixedTerm
                               ? `TNA ${pos.fixed_term_tna}% · vence ${pos.fixed_term_end}`
-                              : `${pos.quantity} u · ${!hasPrice ? 'sin precio' : `precio ${formatUSD(pos.current_price_usd ?? 0)}`}`
+                              : `${pos.quantity} u · precio ${pos.current_price_usd ? formatUSD(pos.current_price_usd) : 'sin precio'}`
                             }
                           </p>
                         </div>
 
                         <div className="text-right shrink-0">
-                          <p className="font-bold text-slate-900">{fmt(valueUSD)}</p>
+                          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                            {fmt(valueUSD)}
+                          </p>
                           {returnPct !== null && (
-                            <p className={cn('text-xs font-semibold flex items-center gap-0.5 justify-end',
-                              returnPct >= 0 ? 'text-green-600' : 'text-red-500'
-                            )}>
-                              {returnPct >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                            <p className="text-xs font-semibold flex items-center gap-0.5 justify-end"
+                              style={{ color: returnPct >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+                              {returnPct >= 0
+                                ? <TrendingUp size={10} />
+                                : <TrendingDown size={10} />}
                               {formatPercent(returnPct)}
                             </p>
                           )}
-                          {!hasPrice && (
-                            <p className="text-xs text-slate-400">manual</p>
-                          )}
                         </div>
 
-                        <ChevronRight size={14} className="text-slate-300 shrink-0" />
+                        <ChevronRight size={14} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
                       </button>
                     )
                   })}
