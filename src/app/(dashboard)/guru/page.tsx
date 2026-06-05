@@ -46,25 +46,16 @@ function useStreamingChat() {
 
       const reader  = res.body.getReader()
       const decoder = new TextDecoder()
-      let buffer = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        buffer += decoder.decode(value, { stream: true })
-
-        // Parse Vercel AI SDK data stream: lines like `0:"text chunk"\n`
-        const lines = buffer.split('\n')
-        buffer = lines.pop() ?? ''
-
-        for (const line of lines) {
-          if (!line.startsWith('0:')) continue
-          try {
-            const text = JSON.parse(line.slice(2)) as string
-            setMessages(prev =>
-              prev.map(m => m.id === assistantId ? { ...m, content: m.content + text } : m)
-            )
-          } catch { /* ignore parse errors */ }
+        // toTextStreamResponse sends plain text chunks
+        const text = decoder.decode(value, { stream: true })
+        if (text) {
+          setMessages(prev =>
+            prev.map(m => m.id === assistantId ? { ...m, content: m.content + text } : m)
+          )
         }
       }
     } catch (e: any) {
