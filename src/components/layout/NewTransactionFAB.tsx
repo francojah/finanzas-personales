@@ -4,8 +4,8 @@ import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 /**
- * Floating Action Button para nuevo movimiento — solo visible en mobile.
- * Se posiciona sobre el bottom nav.
+ * Floating Action Button para nuevo movimiento.
+ * Visible en mobile y desktop, a la izquierda del Guru FAB.
  */
 export function NewTransactionFAB() {
   const router = useRouter()
@@ -13,10 +13,19 @@ export function NewTransactionFAB() {
   return (
     <button
       onClick={() => router.push('/transactions/new')}
-      className="md:hidden fixed bottom-20 right-4 z-50 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-full shadow-lg shadow-indigo-300 flex items-center justify-center transition-transform"
+      className="fixed z-[96] flex items-center justify-center rounded-full active:scale-95 transition-transform"
+      style={{
+        width: 52,
+        height: 52,
+        bottom: 84,
+        right: 80, // a la izquierda del Guru (52px botón + 12px gap + 16px margen)
+        background: 'var(--accent)',
+        boxShadow: '0 4px 20px rgba(99,102,241,0.4)',
+      }}
       aria-label="Nuevo movimiento"
+      title="Nuevo movimiento"
     >
-      <Plus size={24} />
+      <Plus size={22} className="text-white" />
     </button>
   )
 }

@@ -383,13 +383,10 @@ function ImportPageContent() {
             onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f) }} />
 
           <div className="rounded-xl p-4" style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.15)' }}>
-            <p className="text-xs font-semibold mb-2" style={{ color: '#fbbf24' }}>💡 Cómo exportar desde tu banco</p>
-            <ul className="text-xs space-y-1" style={{ color: '#d97706' }}>
-              <li><strong>Galicia:</strong> Mi Cuenta → Movimientos → Exportar → CSV</li>
-              <li><strong>Balanz:</strong> Reportes → Movimientos → Descargar Excel</li>
-              <li><strong>Binance:</strong> Billetera → Historial → Exportar</li>
-              <li><strong>eToro:</strong> Portfolio → Historial → Exportar a Excel</li>
-            </ul>
+            <p className="text-xs font-semibold mb-1" style={{ color: '#fbbf24' }}>💡 ¿Cómo exportar?</p>
+            <p className="text-xs" style={{ color: '#d97706' }}>
+              En tu banco o plataforma buscá la sección de Movimientos o Historial y descargá el archivo en formato CSV, Excel o PDF.
+            </p>
           </div>
         </div>
       )}

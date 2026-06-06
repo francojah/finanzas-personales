@@ -11,25 +11,15 @@ import { UpgradeModal } from '@/components/shared/UpgradeModal'
 import type { Account, AccountType, Currency } from '@/types/database'
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
-  { value: 'bank',    label: 'Banco'    },
-  { value: 'broker',  label: 'Broker'   },
-  { value: 'crypto',  label: 'Crypto'   },
-  { value: 'cash',    label: 'Efectivo' },
-  { value: 'savings', label: 'Ahorro'   },
-]
-const CURRENCIES: Currency[] = ['ARS', 'USD', 'USDT']
-const PLATFORMS = [
-  { value: 'galicia',     label: 'Banco Galicia'  },
-  { value: 'balanz',      label: 'Balanz'         },
-  { value: 'etoro',       label: 'eToro'          },
-  { value: 'binance',     label: 'Binance'        },
-  { value: 'mercadopago', label: 'Mercado Pago'   },
-  { value: 'otro',        label: 'Otro'           },
+  { value: 'bank',    label: 'Cuenta bancaria' },
+  { value: 'broker',  label: 'Inversiones'     },
+  { value: 'crypto',  label: 'Crypto'          },
+  { value: 'cash',    label: 'Efectivo'        },
 ]
 const COLORS = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b']
 
 interface FormState { name: string; type: AccountType; platform: string; currency: Currency; initial_balance: string; color: string }
-const EMPTY: FormState = { name: '', type: 'bank', platform: 'otro', currency: 'ARS', initial_balance: '0', color: '#6366f1' }
+const EMPTY: FormState = { name: '', type: 'bank', platform: '', currency: 'ARS', initial_balance: '0', color: '#6366f1' }
 
 export default function AccountsSettingsPage() {
   const router = useRouter()
@@ -68,7 +58,7 @@ export default function AccountsSettingsPage() {
   }
   function openEdit(acc: Account) {
     setEditing(acc)
-    setForm({ name: acc.name, type: acc.type, platform: acc.platform ?? 'otro', currency: acc.currency as Currency, initial_balance: acc.initial_balance.toString(), color: acc.color })
+    setForm({ name: acc.name, type: acc.type, platform: acc.platform ?? '', currency: acc.currency as Currency, initial_balance: acc.initial_balance.toString(), color: acc.color })
     setShowForm(true)
   }
 
@@ -77,7 +67,7 @@ export default function AccountsSettingsPage() {
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const payload = { user_id: user.id, name: form.name.trim(), type: form.type, platform: form.platform === 'otro' ? null : form.platform, currency: form.currency, initial_balance: parseFloat(form.initial_balance) || 0, color: form.color }
+    const payload = { user_id: user.id, name: form.name.trim(), type: form.type, platform: form.platform.trim() || null, currency: form.currency, initial_balance: parseFloat(form.initial_balance) || 0, color: form.color }
     const { error } = editing
       ? await supabase.from('accounts').update(payload).eq('id', editing.id)
       : await supabase.from('accounts').insert(payload)
@@ -234,10 +224,8 @@ export default function AccountsSettingsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Plataforma</label>
-              <select value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} className="input-base">
-                {PLATFORMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-              </select>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Institución</label>
+              <input value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} placeholder="ej: Galicia, Brubank, Binance..." className="input-base" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Saldo inicial</label>
@@ -281,7 +269,7 @@ export default function AccountsSettingsPage() {
                 <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{acc.name}</p>
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                   {ACCOUNT_TYPES.find(t => t.value === acc.type)?.label} · {acc.currency}
-                  {acc.platform && ` · ${PLATFORMS.find(p => p.value === acc.platform)?.label ?? acc.platform}`}
+                  {acc.platform && ` · ${acc.platform}`}
                 </p>
               </div>
               <div className="flex gap-1">
