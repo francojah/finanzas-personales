@@ -79,7 +79,6 @@ Reglas:
     const { text } = await generateText({
       model: anthropic('claude-haiku-4-5'),
       prompt,
-      maxTokens: 1024,
     })
 
     // Parse response
