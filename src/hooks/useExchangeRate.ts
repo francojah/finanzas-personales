@@ -33,7 +33,7 @@ export function useExchangeRate(): ExchangeRates {
 
   const fetchRates = useCallback(async () => {
     if (cachedRate && Date.now() - cachedRate.ts < CACHE_TTL) {
-      setRates({ mep: cachedRate.mep, ccl: cachedRate.ccl, blue: cachedRate.blue, oficial: cachedRate.oficial })
+      setRates({ mep: cachedRate.mep, ccl: cachedRate.ccl, blue: cachedRate.blue, oficial: cachedRate.oficial, btc: cachedRate.btc })
       setLoading(false)
       return
     }
