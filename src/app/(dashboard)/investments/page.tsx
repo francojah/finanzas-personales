@@ -35,6 +35,7 @@ function InvestmentsContent() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [currency, setCurrency] = useState<'ARS' | 'USD'>('USD')
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -97,8 +98,18 @@ function InvestmentsContent() {
     return acc
   }, {})
 
-  const totalUSD = positions.reduce((s, p) => s + positionValueUSD(p), 0)
-  const totalARS = mep ? totalUSD * mep : 0
+  const totalUSD  = positions.reduce((s, p) => s + positionValueUSD(p), 0)
+  const totalARS  = mep ? totalUSD * mep : 0
+  const totalCost = positions.reduce((s, p) => s + p.quantity * p.avg_purchase_price, 0)
+  const totalPnL  = totalUSD - totalCost
+  const totalPct  = totalCost > 0 ? (totalPnL / totalCost) * 100 : null
+
+  const toggleGroup = (type: string) =>
+    setCollapsedGroups(prev => {
+      const next = new Set(prev)
+      next.has(type) ? next.delete(type) : next.add(type)
+      return next
+    })
 
   const fmt = (usd: number) => currency === 'USD' ? formatUSD(usd) : formatARS(usd * (mep ?? 1))
 
@@ -146,7 +157,27 @@ function InvestmentsContent() {
         <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="p-5">
             <p className="text-xs font-bold tracking-widest mb-3" style={{ color: 'var(--text-faint)' }}>PORTFOLIO TOTAL</p>
-            <p className="text-4xl font-black" style={{ color: 'var(--text-primary)' }}>{fmt(totalUSD)}</p>
+            <div className="flex items-end gap-3 flex-wrap">
+              <p className="text-4xl font-black" style={{ color: 'var(--text-primary)' }}>{fmt(totalUSD)}</p>
+              {totalPct !== null && (
+                <div className="flex items-center gap-1.5 mb-1 px-2.5 py-1 rounded-lg"
+                  style={{
+                    background: totalPnL >= 0 ? 'var(--income-bg)' : 'var(--expense-bg)',
+                  }}>
+                  {totalPnL >= 0
+                    ? <TrendingUp size={13} style={{ color: 'var(--income)' }} />
+                    : <TrendingDown size={13} style={{ color: 'var(--expense)' }} />
+                  }
+                  <span className="text-sm font-bold"
+                    style={{ color: totalPnL >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+                    {totalPnL >= 0 ? '+' : ''}{formatPercent(totalPct)}
+                  </span>
+                  <span className="text-xs" style={{ color: totalPnL >= 0 ? 'var(--income)' : 'var(--expense)', opacity: 0.8 }}>
+                    ({totalPnL >= 0 ? '+' : ''}{fmt(totalPnL)})
+                  </span>
+                </div>
+              )}
+            </div>
             <p className="text-sm mt-1.5" style={{ color: 'var(--text-secondary)' }}>
               {currency === 'USD' ? formatARS(totalARS) : formatUSD(totalUSD)}
               {mep && <span style={{ color: 'var(--text-faint)' }}> · MEP {formatARS(mep)}</span>}
@@ -197,32 +228,51 @@ function InvestmentsContent() {
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {Object.entries(grouped).map(([type, items]) => {
             const groupTotal = items.reduce((s, p) => s + positionValueUSD(p), 0)
+            const groupCost  = items.reduce((s, p) => s + p.quantity * p.avg_purchase_price, 0)
+            const groupPnL   = groupTotal - groupCost
+            const groupPnLPct = groupCost > 0 ? (groupPnL / groupCost) * 100 : null
             const groupPct   = totalUSD > 0 ? (groupTotal / totalUSD) * 100 : 0
             const color      = ASSET_COLORS[type] ?? '#94a3b8'
+            const isCollapsed = collapsedGroups.has(type)
 
             return (
-              <div key={type}>
-                {/* Group header */}
-                <div className="flex items-center justify-between px-4 py-3 rounded-xl mb-2"
-                  style={{ background: color + '10', borderLeft: `3px solid ${color}` }}>
+              <div key={type} className="rounded-xl overflow-hidden"
+                style={{ border: `1px solid ${color}30` }}>
+                {/* Group header — acordeón */}
+                <button
+                  onClick={() => toggleGroup(type)}
+                  className="w-full flex items-center justify-between px-4 py-3"
+                  style={{ background: color + '12', borderLeft: `3px solid ${color}` }}>
                   <div className="flex items-center gap-2.5">
                     <span className="text-sm font-bold" style={{ color }}>{ASSET_LABELS[type] ?? type}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                      style={{ background: color + '20', color }}>
+                      style={{ background: color + '25', color }}>
                       {items.length} {items.length === 1 ? 'posición' : 'posiciones'}
                     </span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{fmt(groupTotal)}</p>
-                    <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{groupPct.toFixed(1)}% del total</p>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{fmt(groupTotal)}</p>
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{groupPct.toFixed(1)}%</span>
+                        {groupPnLPct !== null && (
+                          <span className="text-xs font-semibold"
+                            style={{ color: groupPnL >= 0 ? 'var(--income)' : 'var(--expense)' }}>
+                            {groupPnL >= 0 ? '+' : ''}{formatPercent(groupPnLPct)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight size={14} className="shrink-0 transition-transform"
+                      style={{ color: 'var(--text-faint)', transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)' }} />
                   </div>
-                </div>
+                </button>
 
-                {/* Positions */}
-                <div className="space-y-1.5">
+                {/* Positions — colapsables */}
+                {!isCollapsed && <div className="divide-y" style={{ divideColor: 'var(--border-subtle)' }}>
                   {items.map(pos => {
                     const valueUSD    = positionValueUSD(pos)
                     const returnPct   = positionReturnPct(pos)
@@ -234,10 +284,10 @@ function InvestmentsContent() {
                       <button
                         key={pos.id}
                         onClick={() => router.push(`/investments/${pos.id}`)}
-                        className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all"
-                        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-                        onMouseEnter={e => (e.currentTarget.style.borderColor = color + '60')}
-                        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
+                        style={{ background: 'var(--surface)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface)')}
                       >
                         {/* Ticker badge */}
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[11px] font-black"
@@ -288,7 +338,7 @@ function InvestmentsContent() {
                       </button>
                     )
                   })}
-                </div>
+                </div>}
               </div>
             )
           })}
