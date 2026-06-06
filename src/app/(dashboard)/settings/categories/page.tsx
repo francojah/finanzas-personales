@@ -10,21 +10,12 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { Category, Subcategory } from '@/types/database'
 
-// ─── Íconos disponibles ───────────────────────────────────────
-const ICONS = [
-  'home','shopping-cart','car','heart','user','music','book',
-  'briefcase','zap','trending-up','trending-down','repeat',
-  'tag','target','credit-card','wallet','dollar-sign','globe',
-  'coffee','gift','tool','smartphone','star','shield',
-]
-
 const COLORS = [
   '#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444',
   '#8b5cf6','#ec4899','#06b6d4','#f97316','#84cc16',
   '#64748b','#0ea5e9',
 ]
 
-// ─── Tipos del form ───────────────────────────────────────────
 interface CatForm { name: string; type: 'income' | 'expense'; icon: string; color: string; monthly_budget: string }
 interface SubForm { name: string; description: string }
 
@@ -40,14 +31,12 @@ export default function CategoriesSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  // Formulario categoría
   const [showCatForm, setShowCatForm] = useState(false)
   const [editingCat, setEditingCat] = useState<Category | null>(null)
   const [catForm, setCatForm] = useState<CatForm>(EMPTY_CAT)
   const [savingCat, setSavingCat] = useState(false)
 
-  // Formulario subcategoría
-  const [showSubForm, setShowSubForm] = useState<string | null>(null) // category_id
+  const [showSubForm, setShowSubForm] = useState<string | null>(null)
   const [editingSub, setEditingSub] = useState<Subcategory | null>(null)
   const [subForm, setSubForm] = useState<SubForm>(EMPTY_SUB)
   const [savingSub, setSavingSub] = useState(false)
@@ -66,7 +55,6 @@ export default function CategoriesSettingsPage() {
 
   useEffect(() => { load() }, [tab])
 
-  // ── Categoría ────────────────────────────────────────────────
   function openNewCat() {
     setEditingCat(null)
     setCatForm({ ...EMPTY_CAT, type: tab })
@@ -84,26 +72,20 @@ export default function CategoriesSettingsPage() {
     setSavingCat(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
     const payload = { user_id: user.id, name: catForm.name.trim(), type: catForm.type, icon: catForm.icon, color: catForm.color, monthly_budget: catForm.monthly_budget ? parseFloat(catForm.monthly_budget) : null }
-
     const { error } = editingCat
       ? await supabase.from('categories').update(payload).eq('id', editingCat.id)
       : await supabase.from('categories').insert(payload)
-
     if (error) { toast.error('Error al guardar'); setSavingCat(false); return }
     toast.success(editingCat ? 'Categoría actualizada' : 'Categoría creada')
-    setShowCatForm(false)
-    load()
-    setSavingCat(false)
+    setShowCatForm(false); load(); setSavingCat(false)
   }
 
   async function deleteCat(cat: Category) {
     if (!confirm(`¿Eliminar "${cat.name}"? También se eliminan sus subcategorías.`)) return
     const { error } = await supabase.from('categories').delete().eq('id', cat.id)
     if (error) { toast.error('Error al eliminar'); return }
-    toast.success('Categoría eliminada')
-    load()
+    toast.success('Categoría eliminada'); load()
   }
 
   async function toggleActive(cat: Category) {
@@ -111,11 +93,8 @@ export default function CategoriesSettingsPage() {
     load()
   }
 
-  // ── Subcategoría ─────────────────────────────────────────────
   function openNewSub(categoryId: string) {
-    setEditingSub(null)
-    setSubForm(EMPTY_SUB)
-    setShowSubForm(categoryId)
+    setEditingSub(null); setSubForm(EMPTY_SUB); setShowSubForm(categoryId)
   }
 
   function openEditSub(sub: Subcategory) {
@@ -129,122 +108,103 @@ export default function CategoriesSettingsPage() {
     setSavingSub(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
-    const payload = {
-      user_id: user.id,
-      category_id: categoryId,
-      name: subForm.name.trim(),
-      description: subForm.description || null,
-    }
-
+    const payload = { user_id: user.id, category_id: categoryId, name: subForm.name.trim(), description: subForm.description || null }
     const { error } = editingSub
       ? await supabase.from('subcategories').update(payload).eq('id', editingSub.id)
       : await supabase.from('subcategories').insert(payload)
-
     if (error) { toast.error('Error al guardar'); setSavingSub(false); return }
     toast.success(editingSub ? 'Subcategoría actualizada' : 'Subcategoría creada')
-    setShowSubForm(null)
-    load()
-    setSavingSub(false)
+    setShowSubForm(null); load(); setSavingSub(false)
   }
 
   async function deleteSub(sub: Subcategory) {
     if (!confirm(`¿Eliminar "${sub.name}"?`)) return
     const { error } = await supabase.from('subcategories').delete().eq('id', sub.id)
     if (error) { toast.error('Error al eliminar'); return }
-    toast.success('Subcategoría eliminada')
-    load()
+    toast.success('Subcategoría eliminada'); load()
   }
 
-  // ── Render ───────────────────────────────────────────────────
   return (
     <div className="max-w-lg mx-auto">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-xl">
-            <ArrowLeft size={20} className="text-slate-600" />
+          <button onClick={() => router.back()} className="p-2 rounded-xl"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <ArrowLeft size={18} style={{ color: 'var(--text-secondary)' }} />
           </button>
-          <h1 className="text-xl font-bold text-slate-900">Categorías</h1>
+          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Categorías</h1>
         </div>
-        <button
-          onClick={openNewCat}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl"
-        >
+        <button onClick={openNewCat}
+          className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl text-white"
+          style={{ background: 'var(--accent)' }}>
           <Plus size={15} /> Nueva
         </button>
       </div>
 
-      {/* Tabs Gasto / Ingreso */}
-      <div className="flex rounded-xl bg-slate-100 p-1 mb-5">
+      {/* Tabs */}
+      <div className="flex rounded-xl p-1 mb-5" style={{ background: 'var(--surface-elevated)' }}>
         {([['expense', 'Gastos'], ['income', 'Ingresos']] as const).map(([val, lbl]) => (
           <button key={val} onClick={() => setTab(val)}
-            className={cn('flex-1 py-2 rounded-lg text-sm font-semibold transition-all',
-              tab === val ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'
-            )}>
+            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={tab === val
+              ? { background: 'var(--surface)', color: 'var(--text-primary)', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }
+              : { color: 'var(--text-muted)' }
+            }>
             {lbl}
           </button>
         ))}
       </div>
 
-      {/* Formulario nueva/editar categoría */}
+      {/* Formulario categoría */}
       {showCatForm && (
-        <div className="card mb-4 space-y-4">
-          <h2 className="font-semibold text-slate-800">{editingCat ? 'Editar categoría' : 'Nueva categoría'}</h2>
+        <div className="rounded-xl mb-4 p-5 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <h2 className="font-semibold" style={{ color: 'var(--text-primary)' }}>
+            {editingCat ? 'Editar categoría' : 'Nueva categoría'}
+          </h2>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre</label>
-            <input
-              value={catForm.name}
-              onChange={e => setCatForm(f => ({ ...f, name: e.target.value }))}
-              placeholder="ej: Gastos Hogar"
-              className="input-base"
-              autoFocus
-            />
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Nombre</label>
+            <input value={catForm.name} onChange={e => setCatForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="ej: Gastos Hogar" className="input-base" autoFocus />
           </div>
 
-          {/* Tipo (solo si es nueva) */}
           {!editingCat && (
-            <div className="flex rounded-xl border border-slate-200 overflow-hidden">
+            <div className="flex rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
               {([['expense', 'Gasto'], ['income', 'Ingreso']] as const).map(([val, lbl]) => (
                 <button key={val} type="button"
                   onClick={() => setCatForm(f => ({ ...f, type: val }))}
-                  className={cn('flex-1 py-2 text-sm font-medium transition-colors',
-                    catForm.type === val ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-50'
-                  )}>
+                  className="flex-1 py-2 text-sm font-medium transition-colors"
+                  style={catForm.type === val
+                    ? { background: 'var(--accent)', color: '#fff' }
+                    : { color: 'var(--text-muted)', background: 'transparent' }
+                  }>
                   {lbl}
                 </button>
               ))}
             </div>
           )}
 
-          {/* Color */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Color</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Color</label>
             <div className="flex flex-wrap gap-2">
               {COLORS.map(c => (
                 <button key={c} type="button" onClick={() => setCatForm(f => ({ ...f, color: c }))}
-                  className={cn('w-7 h-7 rounded-lg transition-all', catForm.color === c ? 'ring-2 ring-offset-1 ring-slate-500 scale-110' : '')}
-                  style={{ backgroundColor: c }}
-                />
+                  className="w-7 h-7 rounded-lg transition-all"
+                  style={{ backgroundColor: c, outline: catForm.color === c ? `3px solid ${c}` : 'none', outlineOffset: 2 }} />
               ))}
             </div>
           </div>
 
-          {/* Presupuesto mensual — solo para gastos */}
           {catForm.type === 'expense' && (
             <div>
               <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                 Presupuesto mensual <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>(opcional)</span>
               </label>
-              <input
-                type="number"
-                value={catForm.monthly_budget}
+              <input type="number" value={catForm.monthly_budget}
                 onChange={e => setCatForm(f => ({ ...f, monthly_budget: e.target.value }))}
-                placeholder="ej: 50000"
-                className="input-base"
-              />
+                placeholder="ej: 50000" className="input-base" />
               <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>
                 Si lo completás, aparece una barra de progreso en el dashboard
               </p>
@@ -254,7 +214,7 @@ export default function CategoriesSettingsPage() {
           <div className="flex gap-2">
             <button onClick={() => setShowCatForm(false)}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-              style={{ background: 'var(--surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+              style={{ background: 'var(--surface-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
               Cancelar
             </button>
             <button onClick={saveCat} disabled={savingCat}
@@ -266,16 +226,18 @@ export default function CategoriesSettingsPage() {
         </div>
       )}
 
-      {/* Lista de categorías */}
+      {/* Lista */}
       {loading ? (
         <div className="space-y-2">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-slate-100 rounded-xl animate-pulse" />)}
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: 'var(--surface)' }} />
+          ))}
         </div>
       ) : categories.length === 0 ? (
         <div className="text-center py-14">
-          <Tag size={36} className="text-slate-200 mx-auto mb-3" />
-          <p className="text-slate-400 mb-3">No hay categorías</p>
-          <button onClick={openNewCat} className="text-indigo-600 text-sm font-medium hover:underline">
+          <Tag size={36} className="mx-auto mb-3" style={{ color: 'var(--text-faint)' }} />
+          <p className="mb-3" style={{ color: 'var(--text-muted)' }}>No hay categorías</p>
+          <button onClick={openNewCat} className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
             + Crear primera categoría
           </button>
         </div>
@@ -286,39 +248,37 @@ export default function CategoriesSettingsPage() {
             const isExpanded = expanded === cat.id
 
             return (
-              <div key={cat.id} className={cn('card !p-0 overflow-hidden transition-all', !cat.is_active && 'opacity-50')}>
+              <div key={cat.id} className="rounded-xl overflow-hidden transition-all"
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', opacity: cat.is_active ? 1 : 0.5 }}>
 
                 {/* Fila categoría */}
                 <div className="flex items-center gap-3 p-3">
-                  {/* Color dot */}
                   <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
 
-                  {/* Nombre + contador subs */}
                   <button
                     onClick={() => setExpanded(isExpanded ? null : cat.id)}
-                    className="flex-1 flex items-center gap-2 text-left min-w-0"
-                  >
-                    <span className="font-semibold text-slate-800 text-sm truncate">{cat.name}</span>
-                    <span className="text-xs text-slate-400 shrink-0">{subs.length} sub</span>
+                    className="flex-1 flex items-center gap-2 text-left min-w-0">
+                    <span className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{cat.name}</span>
+                    <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>{subs.length} sub</span>
                     {isExpanded
-                      ? <ChevronDown size={14} className="text-slate-400 shrink-0" />
-                      : <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                      ? <ChevronDown size={14} className="shrink-0" style={{ color: 'var(--text-muted)' }} />
+                      : <ChevronRight size={14} className="shrink-0" style={{ color: 'var(--text-muted)' }} />
                     }
                   </button>
 
-                  {/* Acciones */}
                   <div className="flex gap-1 shrink-0">
                     <button onClick={() => toggleActive(cat)}
-                      className={cn('text-xs px-2 py-1 rounded-lg font-medium transition-colors',
-                        cat.is_active ? 'text-slate-400 hover:bg-slate-100' : 'text-indigo-600 hover:bg-indigo-50'
-                      )}>
+                      className="text-xs px-2 py-1 rounded-lg font-medium transition-colors"
+                      style={{ color: cat.is_active ? 'var(--text-muted)' : 'var(--accent)' }}>
                       {cat.is_active ? 'Ocultar' : 'Mostrar'}
                     </button>
-                    <button onClick={() => openEditCat(cat)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600">
+                    <button onClick={() => openEditCat(cat)} className="p-1.5 rounded-lg transition-colors"
+                      style={{ color: 'var(--text-muted)' }}>
                       <Pencil size={14} />
                     </button>
                     {!cat.is_default && (
-                      <button onClick={() => deleteCat(cat)} className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-500">
+                      <button onClick={() => deleteCat(cat)} className="p-1.5 rounded-lg transition-colors hover:text-red-400"
+                        style={{ color: 'var(--text-muted)' }}>
                         <Trash2 size={14} />
                       </button>
                     )}
@@ -327,29 +287,34 @@ export default function CategoriesSettingsPage() {
 
                 {/* Subcategorías expandidas */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100 bg-slate-50 px-3 py-2 space-y-1">
+                  <div className="px-3 py-2 space-y-0.5"
+                    style={{ borderTop: '1px solid var(--border-subtle)', background: 'var(--surface-elevated)' }}>
                     {subs.map(sub => (
                       <div key={sub.id}>
                         {showSubForm === cat.id && editingSub?.id === sub.id ? (
                           <SubForm
-                            form={subForm}
-                            setForm={setSubForm}
+                            form={subForm} setForm={setSubForm}
                             onSave={() => saveSub(cat.id)}
                             onCancel={() => { setShowSubForm(null); setEditingSub(null) }}
                             saving={savingSub}
                           />
                         ) : (
-                          <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-slate-100 group">
-                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
-                            <span className="text-sm text-slate-700 flex-1">{sub.name}</span>
+                          <div className="flex items-center gap-2.5 py-2 px-2 rounded-lg group transition-colors"
+                            style={{ cursor: 'default' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: cat.color + '99' }} />
+                            <span className="text-sm flex-1" style={{ color: 'var(--text-primary)' }}>{sub.name}</span>
                             {sub.description && (
-                              <span className="text-xs text-slate-400 truncate max-w-[100px]">{sub.description}</span>
+                              <span className="text-xs truncate max-w-[100px]" style={{ color: 'var(--text-faint)' }}>{sub.description}</span>
                             )}
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => openEditSub(sub)} className="p-1 hover:bg-white rounded text-slate-400 hover:text-slate-600">
+                              <button onClick={() => openEditSub(sub)} className="p-1 rounded"
+                                style={{ color: 'var(--text-muted)' }}>
                                 <Pencil size={12} />
                               </button>
-                              <button onClick={() => deleteSub(sub)} className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500">
+                              <button onClick={() => deleteSub(sub)} className="p-1 rounded hover:text-red-400"
+                                style={{ color: 'var(--text-muted)' }}>
                                 <Trash2 size={12} />
                               </button>
                             </div>
@@ -358,11 +323,9 @@ export default function CategoriesSettingsPage() {
                       </div>
                     ))}
 
-                    {/* Form nueva sub */}
                     {showSubForm === cat.id && !editingSub ? (
                       <SubForm
-                        form={subForm}
-                        setForm={setSubForm}
+                        form={subForm} setForm={setSubForm}
                         onSave={() => saveSub(cat.id)}
                         onCancel={() => setShowSubForm(null)}
                         saving={savingSub}
@@ -370,8 +333,10 @@ export default function CategoriesSettingsPage() {
                     ) : (
                       <button
                         onClick={() => openNewSub(cat.id)}
-                        className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-medium py-1 px-2 hover:bg-indigo-50 rounded-lg transition-colors w-full"
-                      >
+                        className="flex items-center gap-1.5 text-xs font-medium py-1.5 px-2 rounded-lg transition-colors w-full mt-0.5"
+                        style={{ color: 'var(--accent)' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-bg)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                         <Plus size={12} /> Agregar subcategoría
                       </button>
                     )}
@@ -386,7 +351,6 @@ export default function CategoriesSettingsPage() {
   )
 }
 
-// ─── Sub-componente formulario subcategoría ───────────────────
 function SubForm({
   form, setForm, onSave, onCancel, saving,
 }: {
@@ -397,7 +361,8 @@ function SubForm({
   saving: boolean
 }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2 my-1">
+    <div className="rounded-xl p-3 space-y-2 my-1"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
       <input
         value={form.name}
         onChange={e => setForm({ ...form, name: e.target.value })}
@@ -414,11 +379,13 @@ function SubForm({
       />
       <div className="flex gap-2">
         <button onClick={onCancel}
-          className="flex-1 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-500 hover:bg-slate-50">
+          className="flex-1 py-1.5 rounded-lg text-xs font-medium"
+          style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)', background: 'var(--surface-elevated)' }}>
           Cancelar
         </button>
         <button onClick={onSave} disabled={saving}
-          className="flex-1 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-60">
+          className="flex-1 py-1.5 rounded-lg text-white text-xs font-semibold disabled:opacity-60"
+          style={{ background: 'var(--accent)' }}>
           {saving ? '...' : 'Guardar'}
         </button>
       </div>
