@@ -76,12 +76,20 @@ export function ReceiptScanner({ receiptUrl, onReceiptUrl, onScanned, isPremium,
       if (!user) throw new Error('Sin sesión')
       const ext = file.name.split('.').pop() ?? 'jpg'
       const path = `${user.id}/receipts/${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('receipts').upload(path, file)
-      if (error) throw error
+      const { error } = await supabase.storage.from('receipts').upload(path, file, {
+        contentType: file.type,
+        upsert: false,
+      })
+      if (error) {
+        console.error('[ReceiptScanner] upload:', error.message)
+        // No bloqueamos — el usuario puede seguir escaneando con el archivo local
+        toast.error('No se pudo guardar en la nube, pero podés escanear igual')
+        return
+      }
       const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(path)
       onReceiptUrl(urlData.publicUrl)
     } catch (e: any) {
-      toast.error('Error al subir imagen')
+      console.error('[ReceiptScanner] upload exception:', e)
     } finally {
       setUploading(false)
     }
@@ -101,7 +109,11 @@ export function ReceiptScanner({ receiptUrl, onReceiptUrl, onScanned, isPremium,
       })
 
       if (res.status === 403) { toast.error('Función exclusiva de Premium'); return }
-      if (!res.ok) throw new Error('scan_failed')
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        console.error('[ReceiptScanner] scan error:', res.status, errBody)
+        throw new Error(errBody.error ?? 'scan_failed')
+      }
 
       const { result } = await res.json() as { result: ScanResult }
       setScanResult(result)

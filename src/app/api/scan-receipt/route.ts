@@ -10,7 +10,7 @@ export interface ScanResult {
   amount: number | null
   currency: 'ARS' | 'USD'
   description: string
-  date: string | null         // yyyy-MM-dd o null
+  date: string | null
   type: 'expense' | 'income'
   merchant: string
   confidence: 'high' | 'medium' | 'low'
@@ -22,14 +22,16 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // Solo Premium — escaneo consume tokens de imagen (más caro)
     const plan = await getUserPlan(supabase, user.id)
     if (plan !== 'premium') {
       return Response.json({ error: 'premium_required' }, { status: 403 })
     }
 
     const apiKey = process.env.ANTHROPIC_API_KEY
-    if (!apiKey) return Response.json({ error: 'API key not configured' }, { status: 500 })
+    if (!apiKey) {
+      console.error('[scan-receipt] ANTHROPIC_API_KEY not set')
+      return Response.json({ error: 'API key not configured' }, { status: 500 })
+    }
 
     const body = await req.json()
     const { imageBase64, mimeType = 'image/jpeg' } = body as {
@@ -41,55 +43,67 @@ export async function POST(req: Request) {
 
     const anthropic = createAnthropic({ apiKey })
 
+    // Pasar la imagen como Uint8Array (más compatible con todas las versiones del SDK)
+    const binaryStr = atob(imageBase64)
+    const bytes = new Uint8Array(binaryStr.length)
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i)
+
     const { text } = await generateText({
-      model: anthropic('claude-haiku-4-5'),
+      model: anthropic('claude-haiku-4-5-20251001'),
       messages: [
         {
           role: 'user',
           content: [
             {
               type: 'image',
-              image: imageBase64,
+              image: bytes,
+              mimeType: mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
             },
             {
               type: 'text',
               text: `Analizá este ticket/comprobante argentino y extraé los datos.
 
-Respondé SOLO con JSON válido:
+Respondé SOLO con un bloque JSON (sin texto antes ni después):
 {
-  "amount": <número sin puntos de miles, con punto decimal, o null si no se ve>,
+  "amount": número con punto decimal o null,
   "currency": "ARS" o "USD",
-  "description": "<nombre del comercio o descripción breve>",
-  "merchant": "<nombre del comercio>",
-  "date": "<yyyy-MM-dd o null>",
+  "description": "nombre del comercio breve",
+  "merchant": "nombre del comercio",
+  "date": "yyyy-MM-dd" o null,
   "type": "expense",
-  "confidence": "high" si los datos son claros, "medium" si hay dudas, "low" si es difícil leer
+  "confidence": "high" | "medium" | "low"
 }
 
 Reglas:
-- Si ves "$" sin indicación USD, es ARS
-- Si ves "USD", "U$S" o "US$", es USD
-- El monto debe ser el TOTAL del ticket (no subtotales)
-- La fecha debe estar en formato yyyy-MM-dd
-- Si no podés leer algo, ponés null`,
+- "$" sin indicación → ARS. "USD", "U$S", "US$" → USD
+- amount = TOTAL del ticket, no subtotales, sin puntos de miles
+- confidence "high" si todo se lee bien, "medium" con dudas, "low" si es ilegible
+- Solo JSON, sin explicaciones adicionales`,
             },
           ],
         },
       ],
+      maxTokens: 300,
     })
 
-    // Parse respuesta
-    const clean = text.trim().replace(/```json|```/g, '').trim()
-    const result = JSON.parse(clean) as ScanResult
+    // Extraer JSON de la respuesta (el modelo puede agregar texto extra)
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      console.error('[scan-receipt] no JSON found in response:', text.substring(0, 200))
+      return Response.json({ error: 'no_json_in_response' }, { status: 422 })
+    }
 
-    // Validaciones básicas
-    if (result.amount !== null && (isNaN(result.amount) || result.amount <= 0)) {
-      result.amount = null
+    const result = JSON.parse(jsonMatch[0]) as ScanResult
+
+    // Validar y normalizar amount
+    if (result.amount !== null) {
+      result.amount = Number(result.amount)
+      if (isNaN(result.amount) || result.amount <= 0) result.amount = null
     }
 
     return Response.json({ result })
-  } catch (e) {
-    console.error('[scan-receipt]', e)
-    return Response.json({ error: 'scan_failed' }, { status: 500 })
+  } catch (e: any) {
+    console.error('[scan-receipt] error:', e?.message ?? e)
+    return Response.json({ error: 'scan_failed', detail: e?.message }, { status: 500 })
   }
 }
