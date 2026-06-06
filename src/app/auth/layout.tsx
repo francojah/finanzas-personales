@@ -100,7 +100,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               <polyline points="16 7 22 7 22 13"/>
             </svg>
           </div>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Finanzapp</h1>
+          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>REGI<span style={{ color: '#f0b429' }}>$</span>TRATIO</h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Tu gestor financiero personal</p>
         </div>
 
@@ -129,18 +129,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
 
           {/* Brand footer */}
-          <div className="flex items-center justify-center gap-1.5 mt-4">
-            <div
-              className="w-5 h-5 rounded-md flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #f0b429, #d97706)' }}
-            >
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
-                <polyline points="16 7 22 7 22 13"/>
-              </svg>
-            </div>
-            <span className="text-xs font-semibold tracking-widest" style={{ color: 'var(--text-faint)' }}>
-              JAH DEV
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <span className="text-xs font-bold tracking-widest" style={{ color: 'var(--text-faint)' }}>
+              REGI<span style={{ color: '#f0b429' }}>$</span>TRATIO
             </span>
           </div>
         </div>

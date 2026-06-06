@@ -26,7 +26,7 @@ const SECTIONS = [
     instructions: 'Registrá tus tarjetas con fecha de cierre y vencimiento. La app te avisa antes del vencimiento y agrupa gastos por resumen.',
   },
   {
-    href: '/settings/people', icon: Users, label: 'Personas', description: 'Contactos para cobros pendientes',
+    href: '/people', icon: Users, label: 'Personas', description: 'Contactos para cobros pendientes',
     iconColor: '#fb923c', iconBg: 'rgba(251,146,60,0.1)',
     instructions: 'Agregá contactos a quienes les prestaste dinero. Asociá gastos compartidos a una persona y mirá el resumen de saldos pendientes.',
   },

@@ -25,6 +25,7 @@ import { RecurringBanner } from '@/components/dashboard/RecurringBanner'
 import { FinancialScoreWidget } from '@/components/dashboard/FinancialScore'
 import { CashFlowForecast } from '@/components/dashboard/CashFlowForecast'
 import { AIInsights } from '@/components/dashboard/AIInsights'
+import { AccountsBreakdownWidget } from '@/components/dashboard/AccountsBreakdownWidget'
 import { NotificationTrigger } from '@/components/shared/NotificationTrigger'
 import type { Transaction } from '@/types/database'
 
@@ -263,6 +264,9 @@ export default function DashboardPage() {
           subtitle={savingsRate >= 20 ? '¡Excelente!' : savingsRate > 0 ? 'Podés mejorar' : 'Más gastos que ingresos'}
           tooltip="% de tus ingresos que ahorraste este mes. Se calcula como (Ingresos − Gastos) / Ingresos. Un 20% o más se considera saludable." />
       </div>
+
+      {/* Cuentas por tipo con saldo calculado */}
+      <AccountsBreakdownWidget />
 
       {/* Patrimonio + Inversiones */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
