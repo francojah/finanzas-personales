@@ -38,6 +38,30 @@ const tooltipStyle = {
   color: 'var(--text-primary)',
 }
 
+function KPICard({
+  label, value, iconBg, iconColor, valueColor, change, changePositiveIsGood, subtitle, tooltip,
+}: {
+  label: string; value: string; iconBg: string; iconColor: string; valueColor: string
+  change?: string | null; changePositiveIsGood?: boolean; subtitle?: string; tooltip?: string
+}) {
+  const isPositive = change?.startsWith('+')
+  const changeColor = change == null ? undefined
+    : changePositiveIsGood
+      ? (isPositive ? 'var(--income)' : 'var(--expense)')
+      : (isPositive ? 'var(--expense)' : 'var(--income)')
+  return (
+    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</p>
+        {tooltip && <Info size={12} style={{ color: 'var(--text-faint)' }} title={tooltip} />}
+      </div>
+      <p className="text-xl font-bold" style={{ color: valueColor }}>{value}</p>
+      {change && <p className="text-xs mt-1 font-medium" style={{ color: changeColor }}>{change} vs mes anterior</p>}
+      {subtitle && !change && <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>{subtitle}</p>}
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const supabase = createClient()
