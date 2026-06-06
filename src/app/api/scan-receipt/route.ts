@@ -43,10 +43,8 @@ export async function POST(req: Request) {
 
     const anthropic = createAnthropic({ apiKey })
 
-    // Pasar la imagen como Uint8Array (más compatible con todas las versiones del SDK)
-    const binaryStr = atob(imageBase64)
-    const bytes = new Uint8Array(binaryStr.length)
-    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i)
+    // Data URL embebe el mimeType — funciona con todas las versiones del SDK
+    const dataUrl = `data:${mimeType};base64,${imageBase64}`
 
     const { text } = await generateText({
       model: anthropic('claude-haiku-4-5-20251001'),
@@ -56,8 +54,7 @@ export async function POST(req: Request) {
           content: [
             {
               type: 'image',
-              image: bytes,
-              mimeType: mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+              image: new URL(dataUrl),
             },
             {
               type: 'text',
