@@ -48,6 +48,7 @@ export default function DashboardPage() {
   const [thisMonth, setThisMonth]   = useState<MonthSummary>({ income_ars: 0, expense_ars: 0, income_usd: 0, expense_usd: 0 })
   const [prevMonth, setPrevMonth]   = useState<MonthSummary>({ income_ars: 0, expense_ars: 0, income_usd: 0, expense_usd: 0 })
   const [recentTx, setRecentTx]     = useState<Transaction[]>([])
+  const [drawerTx, setDrawerTx]     = useState<Transaction | null>(null)
   const [catBreakdown, setCatBreakdown] = useState<CategoryBreakdown[]>([])
   const [barData, setBarData]       = useState<MonthBar[]>([])
   const [userName, setUserName]     = useState('')
@@ -391,4 +392,35 @@ export default function DashboardPage() {
               const isIncome  = tx.type === 'income'
               const isExpense = tx.type === 'expense'
               const Icon = isIncome ? ArrowUpCircle : isExpense ? ArrowDownCircle : ArrowLeftRight
-              const color = isIncome ? 'var(--income)' : isExpense ? 'var(--expense)' : 'var(--accent
+              const color = isIncome ? 'var(--income)' : isExpense ? 'var(--expense)' : 'var(--accent)'
+              const amtColor   = isIncome ? 'var(--income)' : isExpense ? 'var(--expense)' : 'var(--text-secondary)'
+              const amtPrefix  = isIncome ? '+' : isExpense ? '-' : ''
+              const catName    = (tx.category as any)?.name ?? ''
+              return (
+                <div
+                  key={tx.id}
+                  onClick={() => setDrawerTx(tx)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors"
+                  style={{ background: 'var(--surface-elevated)' }}
+                >
+                  <Icon size={16} style={{ color: amtColor, flexShrink: 0 }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                      {tx.description || catName || 'Sin descripción'}
+                    </p>
+                    {catName && <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{catName}</p>}
+                  </div>
+                  <p className="text-sm font-semibold shrink-0" style={{ color: amtColor }}>
+                    {amtPrefix}{formatARS(tx.amount_ars)}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {drawerTx && <TransactionDrawer tx={drawerTx} onClose={() => setDrawerTx(null)} onSaved={() => { setDrawerTx(null) }} />}
+    </div>
+  )
+}

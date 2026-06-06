@@ -215,4 +215,56 @@ export default function TransactionsPage() {
             <div key={date}>
               {/* Separador de fecha */}
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-faint)
+                <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-faint)' }}>
+                  {formatDateShort(date)}
+                </span>
+                <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
+              </div>
+              {/* Transacciones del día */}
+              <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                {txs.map((tx, idx) => {
+                  const isIncome   = tx.type === 'income'
+                  const isExpense  = tx.type === 'expense'
+                  const Icon       = isIncome ? ArrowUpCircle : isExpense ? ArrowDownCircle : ArrowLeftRight
+                  const amtColor   = isIncome ? 'var(--income)' : isExpense ? 'var(--expense)' : 'var(--text-secondary)'
+                  const amtPrefix  = isIncome ? '+' : isExpense ? '-' : ''
+                  const amount     = displayCurrency === 'ARS' ? tx.amount_ars : tx.amount_usd
+                  const catName    = (tx.category as any)?.name ?? ''
+                  const accName    = (tx.account as any)?.name ?? ''
+                  return (
+                    <div
+                      key={tx.id}
+                      onClick={() => router.push(`/transactions/${tx.id}`)}
+                      className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
+                      style={{
+                        background: 'var(--surface)',
+                        borderBottom: idx < txs.length - 1 ? '1px solid var(--border)' : 'none',
+                      }}
+                    >
+                      <Icon size={18} style={{ color: amtColor, flexShrink: 0 }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                          {tx.description || catName || 'Sin descripción'}
+                        </p>
+                        {(catName || accName) && (
+                          <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                            {[catName, accName].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-sm font-semibold shrink-0" style={{ color: amtColor }}>
+                        {amtPrefix}{fmt(amount)}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+    </div>
+  )
+}

@@ -247,4 +247,14 @@ function ProjectCard({
           {isOverBudget && (
             <p className="text-xs text-red-500 mt-1 font-medium">
               ⚠ Superaste el presupuesto por {isExpense
-                ? (project.bu
+                ? (project.budget_amount
+                    ? formatARS(project.spent - project.budget_amount)
+                    : ''
+                  ) : ''}
+            </p>
+          )}
+        </div>
+      ) : null}
+    </button>
+  )
+}

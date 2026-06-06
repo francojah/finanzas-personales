@@ -287,6 +287,11 @@ ${balance >= 0 ? '✅' : '⚠️'} Balance:    ${fmtARS(balance)}`)
   }
 
   return NextResponse.json({ ok: true })
+
+  } catch (e) {
+    console.error('[TG] Webhook error:', e)
+    return NextResponse.json({ ok: true })
+  }
 }
 
 // ── GET: registrar webhook ────────────────────────────────────

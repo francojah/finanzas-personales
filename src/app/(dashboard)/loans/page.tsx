@@ -254,4 +254,21 @@ function LoansPageContent() {
               <div
                 key={loan.id}
                 className="rounded-xl px-4 py-3 flex items-center gap-3"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)', op
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', opacity: 0.55 }}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{loan.name}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {loan.currency} {loan.total_amount.toLocaleString('es-AR')} · Finalizado
+                  </p>
+                </div>
+                <span className="text-xs px-2 py-0.5 rounded-full shrink-0" style={{ background: 'var(--surface-elevated)', color: 'var(--text-faint)' }}>✓</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+    </div>
+  )
+}
