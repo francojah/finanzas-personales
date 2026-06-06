@@ -81,9 +81,11 @@ async function uploadReceipt(fileUrl: string, userId: string): Promise<string | 
 // ── Obtener tipo de cambio ────────────────────────────────────
 async function getRate(): Promise<number> {
   try {
-    const r = await fetch('https://dolarapi.com/v1/dolares/blue')
-    const d = await r.json()
-    return d?.venta ?? 1200
+    // Usamos dólar MEP (bolsa) como tipo de cambio principal de la app
+    const r = await fetch('https://dolarapi.com/v1/dolares')
+    const list = await r.json()
+    const mep = list?.find((d: any) => d.casa === 'bolsa')?.venta
+    return mep ?? 1200
   } catch { return 1200 }
 }
 

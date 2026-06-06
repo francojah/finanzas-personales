@@ -136,7 +136,7 @@ export default function DashboardPage() {
 
       // Últimas transacciones
       const { data: recent } = await supabase
-        .from('transactions').select('*, category:categories(name,color,icon), account:accounts!account_id(name)')
+        .from('transactions').select('*, category:categories(name,color,icon), subcategory:subcategories(name), account:accounts!account_id(name)')
         .gte('date', monthStart).lte('date', monthEnd)
         .order('date', { ascending: false }).order('created_at', { ascending: false }).limit(5)
       setRecentTx((recent ?? []) as Transaction[])
@@ -423,7 +423,13 @@ export default function DashboardPage() {
               const color = isIncome ? 'var(--income)' : isExpense ? 'var(--expense)' : 'var(--accent)'
               const amtColor   = isIncome ? 'var(--income)' : isExpense ? 'var(--expense)' : 'var(--text-secondary)'
               const amtPrefix  = isIncome ? '+' : isExpense ? '-' : ''
-              const catName    = (tx.category as any)?.name ?? ''
+              const catName = (tx.category as any)?.name ?? ''
+              const subName = (tx.subcategory as any)?.name ?? ''
+              const title   = tx.description || subName || catName || 'Sin descripción'
+              const subtitleParts = [
+                subName && subName !== title ? subName : null,
+                catName && catName !== title ? catName : null,
+              ].filter(Boolean)
               return (
                 <div
                   key={tx.id}
@@ -434,9 +440,13 @@ export default function DashboardPage() {
                   <Icon size={16} style={{ color: amtColor, flexShrink: 0 }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                      {tx.description || catName || 'Sin descripción'}
+                      {title}
                     </p>
-                    {catName && <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{catName}</p>}
+                    {subtitleParts.length > 0 && (
+                      <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                        {subtitleParts.join(' · ')}
+                      </p>
+                    )}
                   </div>
                   <p className="text-sm font-semibold shrink-0" style={{ color: amtColor }}>
                     {amtPrefix}{formatARS(tx.amount_ars)}
