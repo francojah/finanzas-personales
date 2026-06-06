@@ -8,6 +8,7 @@ import { formatARS, formatUSD, formatDateShort, cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { usePlan } from '@/hooks/usePlan'
 import { UpgradeModal } from '@/components/shared/UpgradeModal'
+import { TransactionDrawer } from '@/components/shared/TransactionDrawer'
 import type { Transaction } from '@/types/database'
 
 const TYPE_FILTERS = [
@@ -27,6 +28,7 @@ export default function TransactionsPage() {
   const [search, setSearch] = useState('')
   const [displayCurrency, setDisplayCurrency] = useState<'ARS' | 'USD'>('ARS')
   const [showUpgrade, setShowUpgrade] = useState(false)
+  const [drawerTxId, setDrawerTxId]   = useState<string | null>(null)
 
   const txLimit = features.maxTransactions
 
@@ -230,11 +232,20 @@ export default function TransactionsPage() {
                   const amtPrefix  = isIncome ? '+' : isExpense ? '-' : ''
                   const amount     = displayCurrency === 'ARS' ? tx.amount_ars : tx.amount_usd
                   const catName    = (tx.category as any)?.name ?? ''
-                  const accName    = (tx.account as any)?.name ?? ''
+                  const subName    = (tx.subcategory as any)?.name ?? ''
+                  const accName    = (tx.account as any)?.name ?? (tx.credit_card as any)?.name ?? ''
+                  // Título: descripción > subcategoría > categoría
+                  const title = tx.description || subName || catName || 'Sin descripción'
+                  // Subtítulo: subcategoría · categoría · cuenta  (sin repetir lo que ya está en el título)
+                  const subtitleParts = [
+                    subName && subName !== title ? subName : null,
+                    catName && catName !== title ? catName : null,
+                    accName,
+                  ].filter(Boolean)
                   return (
                     <div
                       key={tx.id}
-                      onClick={() => router.push(`/transactions/${tx.id}`)}
+                      onClick={() => setDrawerTxId(tx.id)}
                       className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
                       style={{
                         background: 'var(--surface)',
@@ -244,11 +255,11 @@ export default function TransactionsPage() {
                       <Icon size={18} style={{ color: amtColor, flexShrink: 0 }} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                          {tx.description || catName || 'Sin descripción'}
+                          {title}
                         </p>
-                        {(catName || accName) && (
+                        {subtitleParts.length > 0 && (
                           <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
-                            {[catName, accName].filter(Boolean).join(' · ')}
+                            {subtitleParts.join(' · ')}
                           </p>
                         )}
                       </div>
@@ -265,6 +276,12 @@ export default function TransactionsPage() {
       )}
 
       <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} />
+      <TransactionDrawer
+        transactionId={drawerTxId}
+        onClose={() => setDrawerTxId(null)}
+        onDeleted={() => { setDrawerTxId(null); load() }}
+        onSaved={() => load()}
+      />
     </div>
   )
 }
