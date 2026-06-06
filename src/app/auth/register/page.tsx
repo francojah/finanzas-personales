@@ -15,6 +15,7 @@ const schema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(8, 'Mínimo 8 caracteres'),
   confirm_password: z.string(),
+  terms: z.literal(true, { errorMap: () => ({ message: 'Debés aceptar los términos para continuar' }) }),
 }).refine((d) => d.password === d.confirm_password, {
   message: 'Las contraseñas no coinciden',
   path: ['confirm_password'],
@@ -72,6 +73,30 @@ export default function RegisterPage() {
           <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Confirmar contraseña</label>
           <input {...register('confirm_password')} type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="input-base" autoComplete="new-password" />
           {errors.confirm_password && <p className="text-xs mt-1" style={{ color: 'var(--expense)' }}>{errors.confirm_password.message}</p>}
+        </div>
+
+        {/* T&C checkbox */}
+        <div>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              {...register('terms')}
+              className="mt-0.5 shrink-0 accent-indigo-500"
+              style={{ width: 16, height: 16 }}
+            />
+            <span className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+              Leí y acepto los{' '}
+              <Link href="/terms" target="_blank" className="underline font-medium" style={{ color: 'var(--accent)' }}>
+                Términos y Condiciones
+              </Link>
+              {' '}y la{' '}
+              <Link href="/privacy" target="_blank" className="underline font-medium" style={{ color: 'var(--accent)' }}>
+                Política de Privacidad
+              </Link>
+              {' '}de REGI$TRATIO.
+            </span>
+          </label>
+          {errors.terms && <p className="text-xs mt-1.5 ml-7" style={{ color: 'var(--expense)' }}>{errors.terms.message}</p>}
         </div>
 
         <button
