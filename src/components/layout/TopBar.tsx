@@ -7,7 +7,7 @@ import { useExchangeRate, formatK } from '@/hooks/useExchangeRate'
 function RateChip({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex items-center gap-1 text-xs">
-      <span style={{ color: 'var(--text-faint)', fontSize: 10 }}>{label}</span>
+      <span style={{ color: 'var(--text-secondary)', fontSize: 10 }}>{label}</span>
       <span className="font-semibold tabular-nums" style={{ color: color ?? 'var(--text-primary)' }}>{value}</span>
     </div>
   )

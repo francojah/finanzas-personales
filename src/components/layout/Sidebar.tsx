@@ -128,10 +128,9 @@ export function Sidebar() {
             <polyline points="16 7 22 7 22 13"/>
           </svg>
         </div>
-        <div className="flex flex-col">
-          <span className="font-semibold text-[15px]" style={{ color: 'var(--text-primary)' }}>Finanzapp</span>
-          <span className="text-[10px] font-semibold tracking-[0.2em]" style={{ color: 'var(--text-faint)' }}>JAH DEV</span>
-        </div>
+        <span className="font-black text-[15px] tracking-tight" style={{ color: 'var(--text-primary)' }}>
+          REGI<span style={{ color: '#f0b429' }}>$</span>TRATIO
+        </span>
       </div>
 
       {/* Nav */}
