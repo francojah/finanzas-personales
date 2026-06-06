@@ -80,43 +80,40 @@ function PatrimonioPageContent() {
         </button>
       </div>
 
-      {/* Totales en ambas monedas */}
+      {/* Total card + breakdown por tipo */}
       {assets.length > 0 && (
-        <div className="rounded-2xl p-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-faint)' }}>
-            Patrimonio total
-          </p>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>En dólares</p>
-              <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{formatUSD(totalUSD)}</p>
-            </div>
-            <div>
-              <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>En pesos</p>
-              <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{formatARS(totalARS)}</p>
-            </div>
-          </div>
-          {mep && (
-            <p className="text-xs mt-3" style={{ color: 'var(--text-faint)' }}>
-              Conversión al MEP · {formatARS(mep)}
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div className="p-5">
+            <p className="text-xs font-bold tracking-widest mb-3" style={{ color: 'var(--text-faint)' }}>PATRIMONIO TOTAL</p>
+            <p className="text-4xl font-black mb-1" style={{ color: 'var(--text-primary)' }}>{formatUSD(totalUSD)}</p>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              {formatARS(totalARS)}
+              {mep && <span style={{ color: 'var(--text-faint)' }}> · MEP {formatARS(mep)}</span>}
             </p>
-          )}
-        </div>
-      )}
+          </div>
 
-      {/* Chips por tipo */}
-      {byType.length > 0 && (
-        <div className="flex gap-2 flex-wrap">
-          {byType.map(g => {
-            const Icon = g.icon
-            return (
-              <div key={g.type} className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-                style={{ background: g.bg }}>
-                <Icon size={13} style={{ color: g.color }} />
-                <span className="text-xs font-medium" style={{ color: g.color }}>{g.label} · {g.count}</span>
-              </div>
-            )
-          })}
+          {byType.length > 0 && (
+            <div className="flex" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+              {byType.map((g, i) => {
+                const Icon = g.icon
+                const typeTotal = assets
+                  .filter(a => a.type === g.type)
+                  .reduce((s, a) => s + toUSD(a.value, a.currency as 'USD' | 'ARS'), 0)
+                const pct = totalUSD > 0 ? (typeTotal / totalUSD) * 100 : 0
+                return (
+                  <div key={g.type} className="flex-1 px-4 py-3 text-center"
+                    style={{ borderLeft: i > 0 ? '1px solid var(--border-subtle)' : 'none' }}>
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                      <Icon size={12} style={{ color: g.color }} />
+                      <span className="text-xs font-semibold" style={{ color: g.color }}>{g.label}</span>
+                    </div>
+                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{formatUSD(typeTotal)}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{pct.toFixed(0)}%</p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -140,41 +137,48 @@ function PatrimonioPageContent() {
       ) : (
         <div className="space-y-2">
           {assets.map(asset => {
-            const cfg = TYPE_CONFIG[asset.type as PatrimonioAssetType]
-            const Icon = cfg.icon
-            const cur = asset.currency as 'USD' | 'ARS'
+            const cfg      = TYPE_CONFIG[asset.type as PatrimonioAssetType]
+            const Icon     = cfg.icon
+            const cur      = asset.currency as 'USD' | 'ARS'
             const valueUSD = toUSD(asset.value, cur)
             const valueARS = toARS(asset.value, cur)
+            const weightPct = totalUSD > 0 ? (valueUSD / totalUSD) * 100 : 0
 
             return (
-              <div key={asset.id} className="flex items-center gap-4 rounded-xl px-4 py-3.5"
+              <div key={asset.id} className="rounded-xl overflow-hidden"
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: cfg.bg }}>
-                  <Icon size={17} style={{ color: cfg.color }} />
+                <div className="flex items-center gap-3 px-4 py-3.5">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: cfg.bg }}>
+                    <Icon size={18} style={{ color: cfg.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{asset.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {cfg.label}{asset.description ? ` · ${asset.description}` : ''}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{formatUSD(valueUSD)}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{formatARS(valueARS)}</p>
+                  </div>
+                  <div className="flex items-center gap-1 ml-1 shrink-0">
+                    <span className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
+                      style={{ background: cfg.bg, color: cfg.color }}>
+                      {weightPct.toFixed(0)}%
+                    </span>
+                    <button onClick={() => handleDelete(asset.id)} disabled={deleting === asset.id}
+                      className="p-1.5 rounded-lg hover:text-red-400 transition-colors"
+                      style={{ color: 'var(--text-faint)' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{asset.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                    {cfg.label}{asset.description ? ` · ${asset.description}` : ''}
-                  </p>
+                {/* Barra de peso visual */}
+                <div className="h-0.5 mx-4 mb-2 rounded-full" style={{ background: 'var(--border-subtle)' }}>
+                  <div className="h-full rounded-full transition-all"
+                    style={{ width: `${weightPct}%`, background: cfg.color }} />
                 </div>
-                {/* Ambas monedas */}
-                <div className="text-right shrink-0">
-                  <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
-                    {formatUSD(valueUSD)}
-                  </p>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    {formatARS(valueARS)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleDelete(asset.id)}
-                  disabled={deleting === asset.id}
-                  className="p-1.5 rounded-lg ml-1 shrink-0 hover:bg-red-500/10 transition-colors"
-                  style={{ color: 'var(--text-faint)' }}>
-                  <Trash2 size={14} />
-                </button>
               </div>
             )
           })}

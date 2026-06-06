@@ -143,15 +143,40 @@ function InvestmentsContent() {
 
       {/* Portfolio total */}
       {!loading && positions.length > 0 && (
-        <div className="rounded-2xl p-5" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--accent-icon)' }}>
-            Portfolio total
-          </p>
-          <p className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{fmt(totalUSD)}</p>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            {currency === 'USD' ? formatARS(totalARS) : formatUSD(totalUSD)}
-            {mep && <span style={{ color: 'var(--text-faint)' }}> · MEP {formatARS(mep)}</span>}
-          </p>
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <div className="p-5">
+            <p className="text-xs font-bold tracking-widest mb-3" style={{ color: 'var(--text-faint)' }}>PORTFOLIO TOTAL</p>
+            <p className="text-4xl font-black" style={{ color: 'var(--text-primary)' }}>{fmt(totalUSD)}</p>
+            <p className="text-sm mt-1.5" style={{ color: 'var(--text-secondary)' }}>
+              {currency === 'USD' ? formatARS(totalARS) : formatUSD(totalUSD)}
+              {mep && <span style={{ color: 'var(--text-faint)' }}> · MEP {formatARS(mep)}</span>}
+            </p>
+          </div>
+          {/* Barra de allocación por tipo */}
+          <div className="flex h-1">
+            {Object.entries(grouped).map(([type, items]) => {
+              const groupTotal = items.reduce((s, p) => s + positionValueUSD(p), 0)
+              const pct = totalUSD > 0 ? (groupTotal / totalUSD) * 100 : 0
+              return <div key={type} title={`${ASSET_LABELS[type]}: ${pct.toFixed(1)}%`}
+                style={{ width: `${pct}%`, background: ASSET_COLORS[type] ?? '#94a3b8', transition: 'width 0.5s' }} />
+            })}
+          </div>
+          {/* Leyenda */}
+          <div className="flex gap-3 flex-wrap px-5 py-3" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+            {Object.entries(grouped).map(([type, items]) => {
+              const groupTotal = items.reduce((s, p) => s + positionValueUSD(p), 0)
+              const pct = totalUSD > 0 ? (groupTotal / totalUSD) * 100 : 0
+              const color = ASSET_COLORS[type] ?? '#94a3b8'
+              return (
+                <div key={type} className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {ASSET_LABELS[type]} <span style={{ color: 'var(--text-faint)' }}>{pct.toFixed(0)}%</span>
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -172,74 +197,94 @@ function InvestmentsContent() {
           </button>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {Object.entries(grouped).map(([type, items]) => {
             const groupTotal = items.reduce((s, p) => s + positionValueUSD(p), 0)
-            const color = ASSET_COLORS[type] ?? '#94a3b8'
+            const groupPct   = totalUSD > 0 ? (groupTotal / totalUSD) * 100 : 0
+            const color      = ASSET_COLORS[type] ?? '#94a3b8'
+
             return (
               <div key={type}>
-                <div className="flex items-center justify-between mb-2 px-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-                    <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                      {ASSET_LABELS[type] ?? type}
+                {/* Group header */}
+                <div className="flex items-center justify-between px-4 py-3 rounded-xl mb-2"
+                  style={{ background: color + '10', borderLeft: `3px solid ${color}` }}>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-sm font-bold" style={{ color }}>{ASSET_LABELS[type] ?? type}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                      style={{ background: color + '20', color }}>
+                      {items.length} {items.length === 1 ? 'posición' : 'posiciones'}
                     </span>
                   </div>
-                  <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    {fmt(groupTotal)}
-                  </span>
+                  <div className="text-right">
+                    <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{fmt(groupTotal)}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{groupPct.toFixed(1)}% del total</p>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
+                {/* Positions */}
+                <div className="space-y-1.5">
                   {items.map(pos => {
-                    const valueUSD  = positionValueUSD(pos)
-                    const returnPct = positionReturnPct(pos)
+                    const valueUSD    = positionValueUSD(pos)
+                    const returnPct   = positionReturnPct(pos)
+                    const weightPct   = totalUSD > 0 ? (valueUSD / totalUSD) * 100 : 0
                     const isFixedTerm = pos.asset_type === 'fixed_term'
+                    const isPos       = (returnPct ?? 0) >= 0
 
                     return (
                       <button
                         key={pos.id}
                         onClick={() => router.push(`/investments/${pos.id}`)}
-                        className="w-full flex items-center gap-3 rounded-xl px-4 py-3.5 text-left transition-all"
+                        className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all"
                         style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-                        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent-border)')}
+                        onMouseEnter={e => (e.currentTarget.style.borderColor = color + '60')}
                         onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                       >
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold"
+                        {/* Ticker badge */}
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[11px] font-black"
                           style={{ background: color + '18', color }}>
-                          {pos.asset_type === 'cash_usd' ? 'USD' : (pos.ticker?.slice(0, 3) ?? '···')}
+                          {pos.asset_type === 'cash_usd' ? 'USD' : (pos.ticker?.slice(0, 4) ?? pos.name.slice(0, 3).toUpperCase())}
                         </div>
 
+                        {/* Info */}
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
                             {pos.name}
                           </p>
-                          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                          <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
                             {isFixedTerm
                               ? `TNA ${pos.fixed_term_tna}% · vence ${pos.fixed_term_end}`
                               : pos.asset_type === 'cash_usd'
-                                ? pos.notes ?? (pos.name.toLowerCase().includes('caja') ? 'Caja de ahorro' : 'Efectivo')
-                                : `${pos.quantity} u · precio ${pos.current_price_usd ? formatUSD(pos.current_price_usd) : 'sin precio'}`
+                                ? 'Dólares físicos'
+                                : `${pos.quantity} u · ${pos.current_price_usd ? formatUSD(pos.current_price_usd) : 'sin precio'}`
                             }
                           </p>
                         </div>
 
-                        <div className="text-right shrink-0">
-                          <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                        {/* Valores */}
+                        <div className="text-right shrink-0 space-y-1">
+                          <p className="font-bold text-sm tabular-nums" style={{ color: 'var(--text-primary)' }}>
                             {fmt(valueUSD)}
                           </p>
-                          {returnPct !== null && (
-                            <p className="text-xs font-semibold flex items-center gap-0.5 justify-end"
-                              style={{ color: returnPct >= 0 ? 'var(--income)' : 'var(--expense)' }}>
-                              {returnPct >= 0
-                                ? <TrendingUp size={10} />
-                                : <TrendingDown size={10} />}
-                              {formatPercent(returnPct)}
-                            </p>
-                          )}
+                          <div className="flex items-center gap-1.5 justify-end">
+                            {/* Weight % */}
+                            <span className="text-xs tabular-nums" style={{ color: 'var(--text-faint)' }}>
+                              {weightPct.toFixed(1)}%
+                            </span>
+                            {/* Return badge */}
+                            {returnPct !== null && (
+                              <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-0.5"
+                                style={{
+                                  background: isPos ? 'var(--income-bg)' : 'var(--expense-bg)',
+                                  color: isPos ? 'var(--income)' : 'var(--expense)',
+                                }}>
+                                {isPos ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
+                                {formatPercent(returnPct)}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        <ChevronRight size={14} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+                        <ChevronRight size={13} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
                       </button>
                     )
                   })}
