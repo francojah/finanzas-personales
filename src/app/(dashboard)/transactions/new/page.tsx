@@ -15,6 +15,7 @@ import { useCreditCards } from '@/hooks/useCreditCards'
 import { SplitExpenseSection } from '@/components/shared/SplitExpenseSection'
 import { ReceiptUpload } from '@/components/shared/ReceiptUpload'
 import { formatARS, formatUSD, cn } from '@/lib/utils'
+import { addMonths, format as fmtDate } from 'date-fns'
 import type { Subcategory } from '@/types/database'
 
 interface Split {
@@ -136,6 +137,33 @@ export default function NewTransactionPage() {
       has_installments: data.has_installments,
       total_installments: data.has_installments ? parseInt(data.total_installments ?? '1') : null,
       current_installment: data.has_installments ? 1 : null,
+    }
+
+    // ── Cuotas: crear N transacciones distribuidas por mes ──
+    if (data.has_installments && parseInt(data.total_installments ?? '1') > 1) {
+      const n = Math.min(parseInt(data.total_installments ?? '1'), 60)
+      const amtPerInstallment = amount / n
+      const convertedInstallment = convertAmount(amtPerInstallment, data.currency, rate)
+      const baseDate = new Date(data.date + 'T12:00:00')
+
+      const installmentRows = Array.from({ length: n }, (_, i) => ({
+        ...payload,
+        amount_original:    amtPerInstallment,
+        amount_ars:         convertedInstallment.ars,
+        amount_usd:         convertedInstallment.usd,
+        date:               fmtDate(addMonths(baseDate, i), 'yyyy-MM-dd'),
+        current_installment: i + 1,
+        total_installments:  n,
+        description: payload.description
+          ? `${payload.description} (${i + 1}/${n})`
+          : `Cuota ${i + 1}/${n}`,
+      }))
+
+      const { error: batchErr } = await supabase.from('transactions').insert(installmentRows)
+      if (batchErr) { toast.error('Error al guardar las cuotas'); console.warn(batchErr); return }
+      toast.success(`✅ ${n} cuotas registradas`)
+      router.push('/transactions')
+      return
     }
 
     const { data: tx, error } = await supabase
@@ -328,8 +356,23 @@ export default function NewTransactionPage() {
                   Compra en cuotas
                 </label>
                 {watchInstallments && (
-                  <input {...register('total_installments')} type="number" min="2" max="60"
-                    placeholder="Cantidad de cuotas" className="input-base" />
+                  <div className="space-y-1.5">
+                    <input {...register('total_installments')} type="number" min="2" max="60"
+                      placeholder="Cantidad de cuotas (ej: 12)" className="input-base" />
+                    {(() => {
+                      const n = parseInt(watch('total_installments') ?? '0')
+                      const amt = parseFloat(watch('amount') ?? '0')
+                      if (n >= 2 && amt > 0) {
+                        const perInstallment = amt / n
+                        return (
+                          <p className="text-xs font-medium" style={{ color: 'var(--accent-icon)' }}>
+                            {formatARS(perInstallment)}/mes × {n} = {formatARS(amt)} total
+                          </p>
+                        )
+                      }
+                      return null
+                    })()}
+                  </div>
                 )}
               </div>
             )}

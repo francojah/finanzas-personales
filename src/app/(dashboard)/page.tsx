@@ -25,6 +25,7 @@ import { RecurringBanner } from '@/components/dashboard/RecurringBanner'
 import { FinancialScoreWidget } from '@/components/dashboard/FinancialScore'
 import { CashFlowForecast } from '@/components/dashboard/CashFlowForecast'
 import { AIInsights } from '@/components/dashboard/AIInsights'
+import { NotificationTrigger } from '@/components/shared/NotificationTrigger'
 import type { Transaction } from '@/types/database'
 
 interface MonthSummary { income_ars: number; expense_ars: number; income_usd: number; expense_usd: number }
@@ -463,6 +464,7 @@ export default function DashboardPage() {
 
       <CashFlowForecast />
 
+      <NotificationTrigger />
       {drawerTxId && <TransactionDrawer transactionId={drawerTxId} onClose={() => setDrawerTxId(null)} onDeleted={() => setDrawerTxId(null)} />}
     </div>
   )

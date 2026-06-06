@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Bell, BellOff } from 'lucide-react'
+import { NotificationToggle } from '@/components/shared/NotificationToggle'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -190,6 +191,11 @@ export default function AlertsSettingsPage() {
       >
         {saving ? 'Guardando...' : 'Guardar configuración'}
       </button>
+
+      {/* Notificaciones push del browser */}
+      <div className="mt-4">
+        <NotificationToggle />
+      </div>
     </div>
   )
 }

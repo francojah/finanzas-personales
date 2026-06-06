@@ -1,5 +1,5 @@
-// Service Worker — Finanzas Personales
-const CACHE_NAME = 'finanzas-v1'
+// Service Worker — REGI$TRATIO
+const CACHE_NAME = 'registratio-v1'
 
 // Recursos estáticos a pre-cachear
 const STATIC_ASSETS = [
@@ -78,4 +78,32 @@ self.addEventListener('fetch', (event) => {
       )
     )
   }
+})
+
+// ── Notificaciones desde la app ────────────────────
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SHOW_NOTIFICATION') {
+    const { id, title, body, options = {} } = event.data
+    self.registration.showNotification(title, {
+      body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: id,           // evita duplicados
+      renotify: false,
+      ...options,
+    })
+  }
+})
+
+// ── Click en notificación → abrir app ─────────────
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const url = event.notification.data?.url ?? '/'
+      const existing = list.find(c => c.url.includes(self.location.origin))
+      if (existing) return existing.focus()
+      return clients.openWindow(url)
+    })
+  )
 })

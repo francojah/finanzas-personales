@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Printer, Download, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Printer, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react'
+import { calcFinancialScore } from '@/components/dashboard/FinancialScore'
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD } from '@/lib/utils'
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns'
@@ -112,17 +113,34 @@ function ReportePageContent() {
 
   return (
     <>
-      {/* Print styles */}
+      {/* Print styles — diseño profesional A4 */}
       <style>{`
         @media print {
+          @page { margin: 20mm 18mm; size: A4; }
           body * { visibility: hidden !important; }
           #report-content, #report-content * { visibility: visible !important; }
-          #report-content { position: fixed; top: 0; left: 0; width: 100%; background: white !important; color: #1a1a1a !important; padding: 32px; }
+          #report-content {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background: #ffffff !important; color: #0f172a !important;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+          }
           .no-print { display: none !important; }
-          .print-card { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; }
-          .print-text-primary { color: #0f172a !important; }
+          .print-card {
+            background: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            break-inside: avoid;
+          }
+          .print-accent-card {
+            background: #eef2ff !important;
+            border: 1px solid #c7d2fe !important;
+          }
+          .print-text-primary   { color: #0f172a !important; }
           .print-text-secondary { color: #475569 !important; }
-          .print-text-muted { color: #94a3b8 !important; }
+          .print-text-muted     { color: #94a3b8 !important; }
+          .print-income  { color: #059669 !important; }
+          .print-expense { color: #dc2626 !important; }
+          .print-score-bar { background: #e2e8f0 !important; }
         }
       `}</style>
 
@@ -138,9 +156,9 @@ function ReportePageContent() {
             <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-              style={{ background: 'var(--accent)' }}
+              style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}
             >
-              <Printer size={15} /> Guardar PDF
+              <Printer size={15} /> Descargar PDF
             </button>
           </div>
         </div>
@@ -213,6 +231,38 @@ function ReportePageContent() {
               </div>
             )}
 
+            {/* Score financiero */}
+            {(() => {
+              const score = calcFinancialScore({
+                savingsRate: data.savingsRate,
+                expenseToIncome: data.income_ars > 0 ? data.expense_ars / data.income_ars : 1,
+                patrimonioUSD: data.patrimonioUSD,
+                totalDebtARS: 0,
+                patrimonioARS: data.patrimonioARS,
+                hasInvestments: data.inversionesUSD > 0,
+                monthsWithData: 3,
+              })
+              return (
+                <div className="rounded-xl p-5 print-card" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold print-text-secondary" style={{ color: 'var(--text-secondary)' }}>Score financiero del mes</h3>
+                    <span className="text-lg font-black" style={{ color: score.color }}>{score.total}/100</span>
+                  </div>
+                  <div className="h-2 rounded-full print-score-bar overflow-hidden mb-3" style={{ background: 'var(--border)' }}>
+                    <div className="h-full rounded-full transition-all" style={{ width: `${score.total}%`, background: score.color }} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {score.breakdown.map(b => (
+                      <div key={b.label} className="flex items-center justify-between text-xs">
+                        <span className="print-text-muted" style={{ color: 'var(--text-muted)' }}>{b.label}</span>
+                        <span className="font-semibold print-text-primary" style={{ color: 'var(--text-primary)' }}>{b.score}/{b.max}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Inversiones y Patrimonio */}
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl p-4 print-card" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
@@ -230,7 +280,7 @@ function ReportePageContent() {
 
             {/* Footer */}
             <p className="text-center text-xs print-text-muted" style={{ color: 'var(--text-faint)' }}>
-              Generado por Finanzas JAH · {format(new Date(), 'dd/MM/yyyy HH:mm')}
+              REGI$TRATIO · Reporte generado el {format(new Date(), "dd/MM/yyyy 'a las' HH:mm")}
             </p>
           </div>
         ) : (
