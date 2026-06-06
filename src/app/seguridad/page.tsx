@@ -93,7 +93,8 @@ export default function SeguridadPage() {
         {/* Contacto */}
         <div className="mt-10 rounded-2xl p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>¿Tenés una pregunta de seguridad?</p>
-          <a href="mailto:francojah@gmail.com" className="text-sm font-semibold" stfrancojah@gmail.com
+          <a href="mailto:francojah@gmail.com" className="text-sm font-semibold" style={{ color: 'var(--accent)' }}>
+            francojah@gmail.com
           </a>
         </div>
 
