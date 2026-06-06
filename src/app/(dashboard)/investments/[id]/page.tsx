@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Trash2, TrendingUp, TrendingDown, RefreshCw, Plus, X, Loader2, ArrowDownToLine } from 'lucide-react'
+import { ArrowLeft, Trash2, TrendingUp, TrendingDown, RefreshCw, Plus, X, Loader2, ArrowDownToLine, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD, formatDate, formatPercent, cn } from '@/lib/utils'
 import { useExchangeRate } from '@/hooks/useExchangeRate'
@@ -40,6 +40,19 @@ const EMPTY_TRADE: TradeForm = {
   create_transaction: true,
 }
 
+interface EditForm {
+  name: string
+  ticker: string
+  account_id: string
+  quantity: string
+  avg_purchase_price: string
+  manual_return_pct: string
+  fixed_term_tna: string
+  fixed_term_start: string
+  fixed_term_end: string
+  notes: string
+}
+
 export default function InvestmentDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -58,6 +71,15 @@ export default function InvestmentDetailPage() {
   const [showTradeForm, setShowTradeForm] = useState(false)
   const [tradeForm, setTradeForm] = useState<TradeForm>(EMPTY_TRADE)
   const [savingTrade, setSavingTrade] = useState(false)
+
+  // Formulario de edición
+  const [showEditForm, setShowEditForm] = useState(false)
+  const [editForm, setEditForm] = useState<EditForm>({
+    name: '', ticker: '', account_id: '', quantity: '',
+    avg_purchase_price: '', manual_return_pct: '',
+    fixed_term_tna: '', fixed_term_start: '', fixed_term_end: '', notes: '',
+  })
+  const [savingEdit, setSavingEdit] = useState(false)
 
   useEffect(() => { load() }, [params.id])
 
@@ -113,6 +135,53 @@ export default function InvestmentDetailPage() {
     await supabase.from('investment_positions').delete().eq('id', pos!.id)
     toast.success('Posición eliminada')
     router.push('/investments')
+  }
+
+  // ── Editar posición ───────────────────────────────────────────
+  function openEdit() {
+    if (!pos) return
+    setEditForm({
+      name:              pos.name,
+      ticker:            pos.ticker ?? '',
+      account_id:        (pos as any).account_id ?? '',
+      quantity:          pos.quantity.toString(),
+      avg_purchase_price: pos.avg_purchase_price.toString(),
+      manual_return_pct: pos.manual_return_pct?.toString() ?? '',
+      fixed_term_tna:    pos.fixed_term_tna?.toString() ?? '',
+      fixed_term_start:  pos.fixed_term_start ?? '',
+      fixed_term_end:    pos.fixed_term_end ?? '',
+      notes:             (pos as any).notes ?? '',
+    })
+    setShowEditForm(true)
+    setShowTradeForm(false)
+  }
+
+  async function handleSaveEdit() {
+    if (!pos) return
+    if (!editForm.name.trim()) { toast.error('El nombre es obligatorio'); return }
+    if (!editForm.quantity || parseFloat(editForm.quantity) <= 0) { toast.error('La cantidad debe ser mayor a 0'); return }
+    setSavingEdit(true)
+    const { error } = await supabase
+      .from('investment_positions')
+      .update({
+        name:               editForm.name.trim(),
+        ticker:             editForm.ticker || null,
+        account_id:         editForm.account_id || undefined,
+        quantity:           parseFloat(editForm.quantity),
+        avg_purchase_price: parseFloat(editForm.avg_purchase_price) || pos.avg_purchase_price,
+        manual_return_pct:  editForm.manual_return_pct ? parseFloat(editForm.manual_return_pct) : null,
+        fixed_term_tna:     editForm.fixed_term_tna ? parseFloat(editForm.fixed_term_tna) : null,
+        fixed_term_start:   editForm.fixed_term_start || null,
+        fixed_term_end:     editForm.fixed_term_end || null,
+        notes:              editForm.notes || null,
+        updated_at:         new Date().toISOString(),
+      })
+      .eq('id', pos.id)
+    setSavingEdit(false)
+    if (error) { toast.error('Error al guardar'); return }
+    toast.success('Posición actualizada')
+    setShowEditForm(false)
+    load()
   }
 
   // ── Registrar operación (venta, dividendo, etc.) ──────────────
@@ -233,14 +302,20 @@ export default function InvestmentDetailPage() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => { setShowTradeForm(!showTradeForm); setTradeForm(EMPTY_TRADE) }}
+            onClick={() => { setShowTradeForm(!showTradeForm); setShowEditForm(false); setTradeForm(EMPTY_TRADE) }}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-white"
             style={{ background: showTradeForm ? 'var(--surface-elevated)' : 'var(--accent)' }}
           >
             {showTradeForm
               ? <X size={15} style={{ color: 'var(--text-secondary)' }} />
-              : <><Plus size={15} /> Registrar operación</>
+              : <><Plus size={15} /> Operación</>
             }
+          </button>
+          <button onClick={() => { openEdit(); setShowTradeForm(false) }}
+            className="p-2 rounded-xl transition-colors"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: showEditForm ? 'var(--accent-icon)' : 'var(--text-muted)' }}
+            title="Editar posición">
+            <Pencil size={16} />
           </button>
           <button onClick={handleDelete} className="p-2 rounded-xl hover:text-red-400 transition-colors"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
@@ -248,6 +323,111 @@ export default function InvestmentDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* Formulario de edición */}
+      {showEditForm && (
+        <div className="rounded-2xl p-5 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Editar posición</h3>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Nombre</label>
+              <input value={editForm.name}
+                onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="ej: AAPL, Balanz FCI" className="input-base" autoFocus />
+            </div>
+            {pos.ticker !== null && (
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Ticker</label>
+                <input value={editForm.ticker}
+                  onChange={e => setEditForm(f => ({ ...f, ticker: e.target.value.toUpperCase() }))}
+                  placeholder="ej: AAPL" className="input-base" />
+              </div>
+            )}
+            <div className={pos.ticker !== null ? '' : 'col-span-2'}>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Cuenta</label>
+              <select value={editForm.account_id}
+                onChange={e => setEditForm(f => ({ ...f, account_id: e.target.value }))}
+                className="input-base">
+                <option value="">Sin cuenta</option>
+                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Cantidad</label>
+              <input type="number" step="any" value={editForm.quantity}
+                onChange={e => setEditForm(f => ({ ...f, quantity: e.target.value }))}
+                placeholder="0" className="input-base" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Precio promedio</label>
+              <input type="number" step="any" value={editForm.avg_purchase_price}
+                onChange={e => setEditForm(f => ({ ...f, avg_purchase_price: e.target.value }))}
+                placeholder="0.00" className="input-base" />
+            </div>
+          </div>
+
+          {pos.asset_type === 'fixed_term' && (
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>TNA %</label>
+                <input type="number" step="any" value={editForm.fixed_term_tna}
+                  onChange={e => setEditForm(f => ({ ...f, fixed_term_tna: e.target.value }))}
+                  placeholder="0" className="input-base" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Inicio</label>
+                <input type="date" value={editForm.fixed_term_start}
+                  onChange={e => setEditForm(f => ({ ...f, fixed_term_start: e.target.value }))}
+                  className="input-base" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Vencimiento</label>
+                <input type="date" value={editForm.fixed_term_end}
+                  onChange={e => setEditForm(f => ({ ...f, fixed_term_end: e.target.value }))}
+                  className="input-base" />
+              </div>
+            </div>
+          )}
+
+          {!pos.ticker && pos.asset_type !== 'fixed_term' && (
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                Rendimiento manual <span style={{ color: 'var(--text-faint)' }}>(opcional, %)</span>
+              </label>
+              <input type="number" step="any" value={editForm.manual_return_pct}
+                onChange={e => setEditForm(f => ({ ...f, manual_return_pct: e.target.value }))}
+                placeholder="ej: 12.5" className="input-base" />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Notas <span style={{ color: 'var(--text-faint)' }}>(opcional)</span>
+            </label>
+            <input value={editForm.notes}
+              onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+              placeholder="Notas sobre esta posición" className="input-base" />
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={() => setShowEditForm(false)}
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+              style={{ background: 'var(--surface-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
+              Cancelar
+            </button>
+            <button onClick={handleSaveEdit} disabled={savingEdit}
+              className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-2"
+              style={{ background: 'var(--accent)' }}>
+              {savingEdit && <Loader2 size={14} className="animate-spin" />}
+              Guardar cambios
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Formulario nueva operación */}
       {showTradeForm && (
