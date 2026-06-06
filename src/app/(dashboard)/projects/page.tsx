@@ -11,14 +11,14 @@ import { PlanGate } from '@/components/shared/PlanGate'
 import { OnboardingTip } from '@/components/shared/OnboardingTip'
 
 interface ProjectWithProgress extends Project {
-  spent: number      // para proyectos de gasto
-  contributed: number // para proyectos de ahorro (manual por ahora)
+  spent: number
+  contributed: number
 }
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
-  active:    <div className="w-2 h-2 rounded-full bg-green-400" />,
-  paused:    <PauseCircle size={14} className="text-amber-400" />,
-  completed: <CheckCircle size={14} className="text-green-500" />,
+  active:    <div className="w-2 h-2 rounded-full" style={{ background: 'var(--income)' }} />,
+  paused:    <PauseCircle size={14} style={{ color: '#fbbf24' }} />,
+  completed: <CheckCircle size={14} style={{ color: 'var(--income)' }} />,
 }
 
 export default function ProjectsPage() {
@@ -37,14 +37,9 @@ function ProjectsPageContent() {
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase
-      .from('projects')
-      .select('*')
-      .order('created_at', { ascending: false })
-
+    const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
     const list = (data ?? []) as Project[]
 
-    // Para cada proyecto de gasto, calcular lo gastado
     const withProgress: ProjectWithProgress[] = await Promise.all(
       list.map(async (project) => {
         let spent = 0
@@ -72,7 +67,6 @@ function ProjectsPageContent() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-
       <OnboardingTip
         tipId="projects"
         title="Metas de ahorro y gasto"
@@ -83,38 +77,40 @@ function ProjectsPageContent() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Proyectos</h1>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Proyectos</h1>
         <button onClick={() => router.push('/projects/new')}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">
+          className="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl"
+          style={{ background: 'var(--accent)' }}>
           <Plus size={15} /> Nuevo
         </button>
       </div>
 
-      {/* Stats rápidas */}
+      {/* Stats */}
       {!loading && projects.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="card !p-3 text-center">
-            <p className="text-xl font-bold text-slate-900">{active}</p>
-            <p className="text-xs text-slate-400">Activos</p>
-          </div>
-          <div className="card !p-3 text-center">
-            <p className="text-xl font-bold text-green-600">{savings}</p>
-            <p className="text-xs text-slate-400">De ahorro</p>
-          </div>
-          <div className="card !p-3 text-center">
-            <p className="text-xl font-bold text-indigo-600">{expenses}</p>
-            <p className="text-xs text-slate-400">De gasto</p>
-          </div>
+          {[
+            { label: 'Activos',    value: active,   color: 'var(--text-primary)' },
+            { label: 'De ahorro',  value: savings,  color: 'var(--income)'       },
+            { label: 'De gasto',   value: expenses, color: 'var(--accent-icon)'  },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="rounded-xl p-3 text-center"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p className="text-xl font-bold" style={{ color }}>{value}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{label}</p>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex rounded-xl bg-slate-100 p-1">
+      <div className="flex rounded-xl p-1" style={{ background: 'var(--surface-elevated)' }}>
         {([['all', 'Todos'], ['savings', 'Ahorro'], ['expense', 'Gasto']] as const).map(([val, lbl]) => (
           <button key={val} onClick={() => setTab(val)}
-            className={cn('flex-1 py-2 rounded-lg text-sm font-semibold transition-all',
-              tab === val ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500'
-            )}>
+            className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={tab === val
+              ? { background: 'var(--surface)', color: 'var(--text-primary)', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }
+              : { color: 'var(--text-muted)' }
+            }>
             {lbl}
           </button>
         ))}
@@ -123,26 +119,25 @@ function ProjectsPageContent() {
       {/* Lista */}
       {loading ? (
         <div className="space-y-3">
-          {[...Array(3)].map((_, i) => <div key={i} className="h-28 bg-slate-100 rounded-2xl animate-pulse" />)}
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-28 rounded-2xl animate-pulse" style={{ background: 'var(--surface)' }} />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16">
-          <Target size={40} className="text-slate-200 mx-auto mb-3" />
-          <p className="text-slate-400 mb-4">No hay proyectos todavía</p>
+          <Target size={40} className="mx-auto mb-3" style={{ color: 'var(--text-faint)' }} />
+          <p className="mb-4" style={{ color: 'var(--text-muted)' }}>No hay proyectos todavía</p>
           <button onClick={() => router.push('/projects/new')}
-            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700">
+            className="inline-flex items-center gap-2 text-white px-5 py-2.5 rounded-xl text-sm font-semibold"
+            style={{ background: 'var(--accent)' }}>
             <Plus size={15} /> Crear proyecto
           </button>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map(project => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              mep={mep}
-              onClick={() => router.push(`/projects/${project.id}`)}
-            />
+            <ProjectCard key={project.id} project={project} mep={mep}
+              onClick={() => router.push(`/projects/${project.id}`)} />
           ))}
         </div>
       )}
@@ -150,54 +145,34 @@ function ProjectsPageContent() {
   )
 }
 
-function ProjectCard({
-  project, mep, onClick,
-}: {
-  project: ProjectWithProgress
-  mep: number | null
-  onClick: () => void
-}) {
-  const isSavings = project.type === 'savings'
-  const isExpense = project.type === 'expense'
-
-  // Calcular progreso
-  let progress = 0
-  let current = 0
-  let target = 0
-  let currentLabel = ''
-  let targetLabel = ''
+function ProjectCard({ project, mep, onClick }: { project: ProjectWithProgress; mep: number | null; onClick: () => void }) {
+  const isSavings    = project.type === 'savings'
+  const isExpense    = project.type === 'expense'
+  let progress = 0, current = 0, target = 0, currentLabel = '', targetLabel = ''
 
   if (isExpense && project.budget_amount) {
-    current = project.spent
-    target = project.budget_amount
+    current = project.spent; target = project.budget_amount
     progress = Math.min(100, (current / target) * 100)
     const fmt = project.budget_currency === 'USD' ? formatUSD : formatARS
-    currentLabel = fmt(current)
-    targetLabel = fmt(target)
+    currentLabel = fmt(current); targetLabel = fmt(target)
   }
-
   if (isSavings && project.target_amount) {
-    // Para ahorro, mostraríamos el saldo de la cuenta vinculada (simplificado por ahora)
     target = project.target_amount
-    const fmt = project.target_currency === 'USD' ? formatUSD : formatARS
-    targetLabel = fmt(target)
+    targetLabel = (project.target_currency === 'USD' ? formatUSD : formatARS)(target)
   }
 
   const isOverBudget = isExpense && progress >= 100
   const isNearLimit  = isExpense && progress >= 80 && progress < 100
-
-  const barColor = isOverBudget ? 'bg-red-500'
-    : isNearLimit  ? 'bg-amber-400'
-    : isSavings    ? 'bg-green-500'
-    : 'bg-indigo-500'
+  const barColor     = isOverBudget ? 'var(--expense)' : isNearLimit ? '#fbbf24' : isSavings ? 'var(--income)' : 'var(--accent)'
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full card hover:shadow-sm hover:border-slate-300 transition-all text-left active:scale-[0.99]"
+    <button onClick={onClick}
+      className="w-full rounded-2xl p-4 text-left transition-all active:scale-[0.99]"
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent-border)')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
     >
       <div className="flex items-start gap-3 mb-3">
-        {/* Ícono */}
         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
           style={{ backgroundColor: project.color + '20' }}>
           {isSavings
@@ -205,56 +180,46 @@ function ProjectCard({
             : <Target size={18} style={{ color: project.color }} />
           }
         </div>
-
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             {STATUS_ICONS[project.status]}
-            <p className="font-semibold text-slate-800 truncate">{project.name}</p>
-            <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium ml-auto shrink-0',
-              isSavings ? 'bg-green-50 text-green-700' : 'bg-indigo-50 text-indigo-700'
-            )}>
+            <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{project.name}</p>
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium ml-auto shrink-0"
+              style={isSavings
+                ? { background: 'var(--income-bg)', color: 'var(--income)' }
+                : { background: 'var(--accent-bg)', color: 'var(--accent-text)' }
+              }>
               {isSavings ? 'Ahorro' : 'Gasto'}
             </span>
           </div>
           {project.description && (
-            <p className="text-xs text-slate-400 mt-0.5 truncate">{project.description}</p>
+            <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{project.description}</p>
           )}
         </div>
       </div>
 
       {/* Barra de progreso */}
-      {(isExpense && project.budget_amount) || (isSavings && project.target_amount) ? (
+      {((isExpense && project.budget_amount) || (isSavings && project.target_amount)) && (
         <div>
-          <div className="flex justify-between text-xs text-slate-500 mb-1.5">
-            <span>
-              {isExpense ? `Gastado: ${currentLabel}` : 'Meta:'}
-            </span>
-            <span className={cn('font-semibold', isOverBudget ? 'text-red-600' : '')}>
-              {isExpense
-                ? `${Math.round(progress)}% de ${targetLabel}`
-                : targetLabel
-              }
+          <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>
+            <span>{isExpense ? `Gastado: ${currentLabel}` : 'Meta:'}</span>
+            <span className="font-semibold" style={{ color: isOverBudget ? 'var(--expense)' : 'var(--text-secondary)' }}>
+              {isExpense ? `${Math.round(progress)}% de ${targetLabel}` : targetLabel}
             </span>
           </div>
           {isExpense && (
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className={cn('h-full rounded-full transition-all', barColor)}
-                style={{ width: `${Math.min(progress, 100)}%` }}
-              />
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-elevated)' }}>
+              <div className="h-full rounded-full transition-all"
+                style={{ width: `${Math.min(progress, 100)}%`, background: barColor }} />
             </div>
           )}
           {isOverBudget && (
-            <p className="text-xs text-red-500 mt-1 font-medium">
-              ⚠ Superaste el presupuesto por {isExpense
-                ? (project.budget_amount
-                    ? formatARS(project.spent - project.budget_amount)
-                    : ''
-                  ) : ''}
+            <p className="text-xs mt-1 font-medium" style={{ color: 'var(--expense)' }}>
+              ⚠ Superaste el presupuesto por {project.budget_amount ? formatARS(project.spent - project.budget_amount) : ''}
             </p>
           )}
         </div>
-      ) : null}
+      )}
     </button>
   )
 }
