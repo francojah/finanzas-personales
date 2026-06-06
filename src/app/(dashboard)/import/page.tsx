@@ -471,7 +471,7 @@ function ImportPageContent() {
             <button onClick={buildTransactions} disabled={!colMap.date || !colMap.description || suggesting}
               className="flex-1 py-3 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
               style={{ background: 'var(--accent)' }}>
-              {suggesting ? <><Loader2 size={15} className="animate-spin" /> Analizando...</> : <>Continuar <ChevronRight size={15} /></>}
+              {suggesting ? <><Loader2 size={15} className="animate-spin" /> Categorizando con IA...</> : <>Continuar <ChevronRight size={15} /></>}
             </button>
           </div>
         </div>
@@ -619,7 +619,7 @@ function ImportPageContent() {
                             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex items-center gap-1"
                               style={{ background: confStyle.bg, color: confStyle.color }}>
                               <Sparkles size={9} />
-                              {tx.suggestion?.source === 'history' ? 'Del historial' : 'Auto'}
+                              {tx.suggestion?.source === 'history' ? 'Del historial' : tx.suggestion?.aiSuggested ? 'Claude IA' : 'Auto'}
                             </span>
                           )}
 

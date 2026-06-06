@@ -13,6 +13,7 @@ export interface CategorySuggestion {
   subcategory_id: string
   confidence: 'high' | 'medium' | 'low'
   source: 'history' | 'keyword'
+  aiSuggested?: boolean
 }
 
 // ── Normalizar texto ─────────────────────────────────────────
@@ -231,14 +232,33 @@ export async function suggestCategoriesBatch(
 ): Promise<Record<string, CategorySuggestion>> {
   const results: Record<string, CategorySuggestion> = {}
 
+  // 1. Historial + keywords para todas
   await Promise.all(
     transactions.map(async tx => {
       const suggestion = await suggestCategory(tx.description, tx.type, categories, supabase)
-      if (suggestion) {
-        results[tx.id] = suggestion
-      }
+      if (suggestion) results[tx.id] = suggestion
     })
   )
+
+  // 2. Las que no tuvieron match → Claude
+  const unmatched = transactions.filter(tx => !results[tx.id])
+  if (unmatched.length > 0) {
+    try {
+      const res = await fetch('/api/ai-categorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: unmatched, categories }),
+      })
+      if (res.ok) {
+        const { suggestions } = await res.json()
+        for (const [id, s] of Object.entries(suggestions) as [string, any][]) {
+          results[id] = { ...s, source: 'keyword' as const, aiSuggested: true }
+        }
+      }
+    } catch {
+      // Si falla la IA, no hay problema — seguimos sin esas sugerencias
+    }
+  }
 
   return results
 }
