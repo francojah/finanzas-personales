@@ -22,6 +22,9 @@ import { MonthPicker } from '@/components/shared/MonthPicker'
 import { useExchangeRate } from '@/hooks/useExchangeRate'
 import { BudgetOverview } from '@/components/dashboard/BudgetOverview'
 import { RecurringBanner } from '@/components/dashboard/RecurringBanner'
+import { FinancialScoreWidget } from '@/components/dashboard/FinancialScore'
+import { CashFlowForecast } from '@/components/dashboard/CashFlowForecast'
+import { AIInsights } from '@/components/dashboard/AIInsights'
 import type { Transaction } from '@/types/database'
 
 interface MonthSummary { income_ars: number; expense_ars: number; income_usd: number; expense_usd: number }
@@ -443,6 +446,22 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Score + Forecast + AI Insights */}
+      <div className="grid md:grid-cols-2 gap-5">
+        <FinancialScoreWidget input={{
+          savingsRate,
+          expenseToIncome: thisMonth.income_ars > 0 ? thisMonth.expense_ars / thisMonth.income_ars : 1,
+          patrimonioUSD,
+          totalDebtARS: 0,
+          patrimonioARS,
+          hasInvestments: inversionesUSD > 0,
+          monthsWithData: 3,
+        }} />
+        <AIInsights />
+      </div>
+
+      <CashFlowForecast />
 
       {drawerTxId && <TransactionDrawer transactionId={drawerTxId} onClose={() => setDrawerTxId(null)} onDeleted={() => setDrawerTxId(null)} />}
     </div>
