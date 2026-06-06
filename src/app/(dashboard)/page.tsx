@@ -72,7 +72,7 @@ export default function DashboardPage() {
   const [thisMonth, setThisMonth]   = useState<MonthSummary>({ income_ars: 0, expense_ars: 0, income_usd: 0, expense_usd: 0 })
   const [prevMonth, setPrevMonth]   = useState<MonthSummary>({ income_ars: 0, expense_ars: 0, income_usd: 0, expense_usd: 0 })
   const [recentTx, setRecentTx]     = useState<Transaction[]>([])
-  const [drawerTx, setDrawerTx]     = useState<Transaction | null>(null)
+  const [drawerTxId, setDrawerTxId] = useState<string | null>(null)
   const [catBreakdown, setCatBreakdown] = useState<CategoryBreakdown[]>([])
   const [barData, setBarData]       = useState<MonthBar[]>([])
   const [userName, setUserName]     = useState('')
@@ -423,7 +423,7 @@ export default function DashboardPage() {
               return (
                 <div
                   key={tx.id}
-                  onClick={() => setDrawerTx(tx)}
+                  onClick={() => setDrawerTxId(tx.id)}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors"
                   style={{ background: 'var(--surface-elevated)' }}
                 >
@@ -444,7 +444,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {drawerTx && <TransactionDrawer tx={drawerTx} onClose={() => setDrawerTx(null)} onSaved={() => { setDrawerTx(null) }} />}
+      {drawerTxId && <TransactionDrawer transactionId={drawerTxId} onClose={() => setDrawerTxId(null)} onDeleted={() => setDrawerTxId(null)} />}
     </div>
   )
 }
