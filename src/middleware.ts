@@ -35,6 +35,8 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = [
     '/welcome',
     '/seguridad',
+    '/terms',
+    '/privacy',
     '/auth/login',
     '/auth/register',
     '/auth/forgot-password',

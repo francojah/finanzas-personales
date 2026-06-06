@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, Zap, Sparkles, Shield } from 'lucide-react'
+import { Check, Zap, Sparkles, Shield, RefreshCw, Star } from 'lucide-react'
 import { usePlan } from '@/hooks/usePlan'
 import { FREE_FEATURES_LIST, PREMIUM_FEATURES_LIST, PREMIUM_PRICE_LABEL } from '@/lib/plans'
 
@@ -28,6 +28,10 @@ export default function PricingPage() {
         </h1>
         <p className="text-base" style={{ color: 'var(--text-muted)' }}>
           Empezá gratis y pasate a Premium cuando quieras.
+        </p>
+        {/* Price anchor */}
+        <p className="text-sm pt-1" style={{ color: 'var(--text-faint)' }}>
+          Premium vale lo mismo que 2 cafés por mes 🧉
         </p>
       </div>
 
@@ -116,14 +120,47 @@ export default function PricingPage() {
       {/* Trust badges */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { icon: Shield, text: 'Pago seguro vía MercadoPago' },
-          { icon: Zap,    text: 'Activación inmediata' },
-          { icon: Check,  text: 'Cancelá cuando quieras' },
+          { icon: Shield,     text: 'Pago seguro vía MercadoPago' },
+          { icon: Zap,        text: 'Activación inmediata' },
+          { icon: RefreshCw,  text: 'Cancelá cuando quieras' },
         ].map(({ icon: Icon, text }) => (
           <div key={text} className="flex flex-col items-center gap-2 p-4 rounded-xl text-center"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <Icon size={18} style={{ color: 'var(--text-muted)' }} />
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{text}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Garantía */}
+      <div className="rounded-2xl p-5 flex items-start gap-4"
+        style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)' }}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(16,185,129,0.1)' }}>
+          <Star size={18} style={{ color: '#10b981' }} />
+        </div>
+        <div>
+          <p className="text-sm font-bold mb-0.5" style={{ color: 'var(--text-primary)' }}>
+            Sin riesgo — probalo 7 días
+          </p>
+          <p className="text-xs leading-5" style={{ color: 'var(--text-muted)' }}>
+            Si en los primeros 7 días no estás satisfecho, te devolvemos el importe sin preguntas. Escribinos desde Configuración.
+          </p>
+        </div>
+      </div>
+
+      {/* FAQ rápido */}
+      <div className="rounded-2xl p-5 space-y-4"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Preguntas frecuentes</p>
+        {[
+          { q: '¿Cómo se cobra?', a: 'Débito automático mensual a través de MercadoPago. Podés cancelar en cualquier momento desde tu cuenta de MercadoPago.' },
+          { q: '¿Pierdo mis datos si cancelo?', a: 'No. Tus datos siguen disponibles en el plan gratuito. Solo perdés acceso a las funciones Premium.' },
+          { q: '¿Puedo probar Premium antes de pagar?', a: 'El plan gratuito te permite explorar la app. Si querés probar todas las funciones, tenés 7 días de garantía desde tu primer pago.' },
+        ].map(({ q, a }) => (
+          <div key={q} className="pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+            <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>{q}</p>
+            <p className="text-xs leading-5" style={{ color: 'var(--text-muted)' }}>{a}</p>
           </div>
         ))}
       </div>

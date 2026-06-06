@@ -73,21 +73,21 @@ export const PREMIUM_PRICE_LABEL = '$5.990 / mes'
 export const PREMIUM_FEATURES_LIST = [
   'Movimientos ilimitados',
   'Cuentas y tarjetas ilimitadas',
-  'Inversiones y Patrimonio',
-  'Metas de ahorro y Préstamos',
-  'Guru Financiero con IA',
-  'Importar extractos bancarios',
+  'Portfolio de inversiones y Patrimonio neto',
+  'Metas de ahorro y seguimiento de Préstamos',
+  'Guru Financiero con IA — análisis personalizado',
+  'Importar extractos de bancos y brokers',
   'Escaneo de tickets con IA',
-  'Reporte mensual PDF',
-  'Gastos recurrentes',
-  'Cobros entre personas',
+  'Reporte mensual en PDF',
+  'Gastos e ingresos recurrentes',
+  'Gestión de cobros entre personas',
 ]
 
 // Features que tiene Free (para la comparativa)
 export const FREE_FEATURES_LIST = [
-  'Dashboard completo',
-  'Hasta 50 movimientos',
-  '1 cuenta bancaria',
-  '1 tarjeta de crédito',
+  'Dashboard con balance en tiempo real',
+  'Hasta 50 movimientos para probar',
+  '1 cuenta y 1 tarjeta de crédito',
+  'Categorías y subcategorías ilimitadas',
   'Calculadora de Interés Compuesto',
 ]

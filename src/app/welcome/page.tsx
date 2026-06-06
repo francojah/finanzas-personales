@@ -1,6 +1,28 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Check, TrendingUp, Sparkles, Shield, BarChart3, Target, CreditCard, Landmark, MessageCircle, DollarSign, ChevronDown } from 'lucide-react'
 import { PREMIUM_PRICE_LABEL, FREE_FEATURES_LIST, PREMIUM_FEATURES_LIST } from '@/lib/plans'
+
+export const metadata: Metadata = {
+  title: 'REGI$TRATIO — Gestor de finanzas personales para Argentina',
+  description: 'Controlá gastos, inversiones y patrimonio en ARS y USD. Con dólar blue en tiempo real, bot de Telegram e IA financiera. Empezá gratis.',
+  keywords: ['finanzas personales', 'control de gastos', 'app finanzas argentina', 'dólar blue', 'inversiones', 'presupuesto personal', 'patrimonio neto'],
+  openGraph: {
+    title: 'REGI$TRATIO — Tu gestor de finanzas personales',
+    description: 'Controlá gastos, inversiones y patrimonio en ARS y USD. Con dólar blue en tiempo real e IA financiera.',
+    url: 'https://registratio.app/welcome',
+    siteName: 'REGI$TRATIO',
+    locale: 'es_AR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'REGI$TRATIO — Gestor de finanzas personales',
+    description: 'Controlá gastos, inversiones y patrimonio en ARS y USD. Empezá gratis.',
+  },
+  robots: { index: true, follow: true },
+  alternates: { canonical: 'https://registratio.app/welcome' },
+}
 
 function Logo({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const dims = size === 'lg' ? 'w-10 h-10' : size === 'md' ? 'w-8 h-8' : 'w-6 h-6'
@@ -266,6 +288,8 @@ export default function WelcomePage() {
             <Link href="/auth/login" style={{ color: 'var(--text-faint)' }}>Iniciar sesión</Link>
             <Link href="/auth/register" style={{ color: 'var(--text-faint)' }}>Registrarse</Link>
             <Link href="/seguridad" style={{ color: 'var(--text-faint)' }}>Seguridad</Link>
+            <Link href="/terms" style={{ color: 'var(--text-faint)' }}>Términos</Link>
+            <Link href="/privacy" style={{ color: 'var(--text-faint)' }}>Privacidad</Link>
           </div>
           <p className="text-xs" style={{ color: 'var(--text-faint)' }}>© 2026 REGI$TRATIO</p>
         </div>

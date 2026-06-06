@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 const STEPS = [
-  { id: 'welcome',  title: '¡Bienvenido a Finanzas!',    icon: Sparkles },
+  { id: 'welcome',  title: '¡Bienvenido a REGI$TRATIO!', icon: Sparkles },
   { id: 'account',  title: 'Agregá tu primera cuenta',   icon: Wallet   },
   { id: 'income',   title: 'Cargá tu ingreso mensual',   icon: TrendingUp },
   { id: 'done',     title: '¡Listo para comenzar!',      icon: Check    },

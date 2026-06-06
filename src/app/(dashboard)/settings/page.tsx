@@ -1,10 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { Wallet, Tag, CreditCard, Users, Bell, Bot, ArrowRight, BookOpen, ChevronDown, ChevronUp } from 'lucide-react'
+import { Wallet, Tag, CreditCard, Users, Bell, Bot, ArrowRight, BookOpen, ChevronDown, ChevronUp, UserCircle } from 'lucide-react'
 import { useState } from 'react'
 
 const SECTIONS = [
+  {
+    href: '/settings/profile', icon: UserCircle, label: 'Mi perfil', description: 'Nombre, contraseña y eliminar cuenta',
+    iconColor: '#a78bfa', iconBg: 'rgba(167,139,250,0.1)',
+    instructions: 'Actualizá tu nombre, cambiá tu contraseña o eliminá tu cuenta y todos tus datos de forma permanente.',
+  },
   {
     href: '/settings/accounts', icon: Wallet, label: 'Cuentas', description: 'Bancarias, broker, crypto, efectivo',
     iconColor: '#60a5fa', iconBg: 'rgba(96,165,250,0.1)',
