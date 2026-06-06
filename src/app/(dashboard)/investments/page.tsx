@@ -272,7 +272,7 @@ function InvestmentsContent() {
                 </button>
 
                 {/* Positions — colapsables */}
-                {!isCollapsed && <div className="divide-y" style={{ divideColor: 'var(--border-subtle)' }}>
+                {!isCollapsed && <div>
                   {items.map(pos => {
                     const valueUSD    = positionValueUSD(pos)
                     const returnPct   = positionReturnPct(pos)
@@ -280,12 +280,13 @@ function InvestmentsContent() {
                     const isFixedTerm = pos.asset_type === 'fixed_term'
                     const isPos       = (returnPct ?? 0) >= 0
 
+                    const posIdx = items.indexOf(pos)
                     return (
                       <button
                         key={pos.id}
                         onClick={() => router.push(`/investments/${pos.id}`)}
                         className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
-                        style={{ background: 'var(--surface)' }}
+                        style={{ background: 'var(--surface)', borderTop: posIdx > 0 ? '1px solid var(--border-subtle)' : 'none' }}
                         onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'var(--surface)')}
                       >
