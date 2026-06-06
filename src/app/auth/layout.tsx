@@ -26,7 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               <polyline points="16 7 22 7 22 13"/>
             </svg>
           </div>
-          <span className="text-lg font-bold text-white tracking-tight">Finanzapp</span>
+          <span className="text-lg font-bold text-white tracking-tight">REGI<span style={{ color: '#fde68a' }}>$</span>TRATIO</span>
         </div>
 
         {/* Hero copy */}

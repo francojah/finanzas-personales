@@ -44,9 +44,9 @@ export function useExchangeRate(): ExchangeRates {
       const res  = await window.fetch('https://dolarapi.com/v1/dolares')
       const list = await res.json() as { nombre: string; compra: number; venta: number }[]
 
-      const byCasa = (casa: string) => list.find(d => d.casa?.toLowerCase() === casa)?.venta ?? null
+      const byCasa = (casa: string) => list.find((d: any) => d.casa?.toLowerCase() === casa)?.venta ?? null
 
-      const mep     = byCasa('bolsa')       // Dólar Bolsa = MEP
+      const mep     = byCasa('bolsa')        // Dólar Bolsa = MEP
       const ccl     = byCasa('contadoconliqui')
       const blue    = byCasa('blue')
       const oficial = byCasa('oficial')
