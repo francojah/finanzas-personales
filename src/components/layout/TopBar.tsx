@@ -1,6 +1,6 @@
 'use client'
 
-import { TrendingUp, RefreshCw, Search, Command } from 'lucide-react'
+import { TrendingUp, RefreshCw } from 'lucide-react'
 import { formatARS } from '@/lib/utils'
 import { useExchangeRate, formatK } from '@/hooks/useExchangeRate'
 
@@ -41,29 +41,9 @@ export function TopBar() {
         </span>
       </div>
 
-      {/* Mobile search */}
-      <button
-        onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
-        className="md:hidden p-2 rounded-lg" style={{ color: 'var(--text-muted)' }} title="Buscar">
-        <Search size={18} />
-      </button>
-
       <div className="hidden md:block" />
 
       <div className="flex items-center gap-2">
-        {/* Search — desktop */}
-        <button
-          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
-          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm"
-          style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
-          title="Búsqueda global (⌘K)">
-          <Search size={13} />
-          <span style={{ color: 'var(--text-faint)' }}>Buscar...</span>
-          <span className="flex items-center gap-0.5 text-[10px] px-1 rounded" style={{ background: 'var(--border)', color: 'var(--text-faint)' }}>
-            <Command size={9} />K
-          </span>
-        </button>
-
         {/* Barra de cotizaciones */}
         {mep ? (
           <div className="flex items-center gap-0 rounded-lg overflow-hidden"
