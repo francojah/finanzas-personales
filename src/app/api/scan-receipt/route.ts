@@ -50,7 +50,6 @@ export async function POST(req: Request) {
             {
               type: 'image',
               image: imageBase64,
-              mimeType: mimeType as 'image/jpeg' | 'image/png' | 'image/webp',
             },
             {
               type: 'text',
