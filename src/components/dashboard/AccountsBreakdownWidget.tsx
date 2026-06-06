@@ -62,18 +62,50 @@ export function AccountsBreakdownWidget() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const [{ data: accs }, { data: txs }] = await Promise.all([
+      const [{ data: accs }, { data: txs }, { data: positions }] = await Promise.all([
         supabase.from('accounts').select('*').eq('is_active', true).order('sort_order').order('created_at'),
         supabase.from('transactions')
           .select('account_id, transfer_to_account_id, type, amount_ars, amount_usd')
           .eq('user_id', user.id),
+        supabase.from('investment_positions')
+          .select('account_id, quantity, avg_purchase_price, current_price_usd, asset_type, fixed_term_tna, fixed_term_start, fixed_term_end')
+          .eq('user_id', user.id)
+          .eq('is_active', true),
       ])
 
       if (!accs) { setLoading(false); return }
 
+      // Intentar obtener MEP del localStorage (lo guarda el hook useExchangeRate)
+      let mep = 1200
+      try {
+        const stored = localStorage.getItem('exchangeRates')
+        if (stored) { const r = JSON.parse(stored); if (r.mep) mep = r.mep }
+      } catch {}
+
       // Mapa: account_id → balance acumulado
       const balMap = new Map<string, number>()
       for (const a of accs) balMap.set(a.id, a.initial_balance ?? 0)
+
+      // Sumar valor de posiciones de inversión por cuenta
+      for (const pos of positions ?? []) {
+        if (!pos.account_id) continue
+        const acc = accs.find(a => a.id === pos.account_id)
+        if (!acc) continue
+        const isUSDAccount = acc.currency === 'USD' || acc.currency === 'USDT'
+
+        let valueUSD = pos.quantity * (pos.current_price_usd ?? pos.avg_purchase_price)
+        // Plazo fijo: valor en ARS
+        if (pos.asset_type === 'fixed_term') {
+          const days = pos.fixed_term_start && pos.fixed_term_end
+            ? Math.max(0, Math.ceil((new Date(pos.fixed_term_end).getTime() - new Date(pos.fixed_term_start).getTime()) / 86400000))
+            : 0
+          const totalARS = pos.quantity * pos.avg_purchase_price * (1 + ((pos.fixed_term_tna ?? 0) / 100) * (days / 365))
+          valueUSD = totalARS / mep
+        }
+
+        const addValue = isUSDAccount ? valueUSD : valueUSD * mep
+        balMap.set(pos.account_id, (balMap.get(pos.account_id) ?? 0) + addValue)
+      }
 
       for (const tx of txs ?? []) {
         const acc = accs.find(a => a.id === tx.account_id)
