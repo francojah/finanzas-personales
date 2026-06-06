@@ -1,20 +1,24 @@
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText } from 'ai'
 import { createClient } from '@/lib/supabase/server'
+import { getUserPlan } from '@/lib/get-user-plan'
 
 export const runtime = 'nodejs'
-export const maxDuration = 30
+export const maxDuration = 20
 
-interface TxInput {
-  id: string
-  description: string
-  type: 'income' | 'expense'
+// Cache server-side: description_normalized → { category, subcategory }
+// Compartido entre usuarios para maximizar reutilización
+const descCache = new Map<string, { category: string; subcategory: string | null }>()
+const MAX_BATCH = 20    // max transacciones por llamada
+const CACHE_MAX = 5000  // max entradas en cache
+
+function normalize(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60)
 }
 
+interface TxInput { id: string; description: string; type: 'income' | 'expense' }
 interface CategoryInfo {
-  id: string
-  name: string
-  type: string
+  id: string; name: string; type: string
   subcategories?: { id: string; name: string }[]
 }
 
@@ -29,80 +33,77 @@ export async function POST(req: Request) {
       return Response.json({ suggestions: {} })
     }
 
-    // Auth check
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Solo Premium
+    const plan = await getUserPlan(supabase, user.id)
+    if (plan !== 'premium') return Response.json({ suggestions: {} })
+
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return Response.json({ suggestions: {} })
 
-    // Build category list for the prompt
-    const catList = categories
-      .map(c => {
-        const subs = c.subcategories?.map(s => s.name).join(', ')
-        return subs ? `- ${c.name} (${c.type}) [subcategorías: ${subs}]` : `- ${c.name} (${c.type})`
-      })
-      .join('\n')
+    const result: Record<string, { category_id: string; subcategory_id: string; confidence: string }> = {}
 
-    // Build transaction list
-    const txList = transactions
-      .map(tx => `${tx.id}|${tx.type}|${tx.description}`)
-      .join('\n')
+    // 1. Resolver desde cache de descripciones
+    const toProcess: TxInput[] = []
+    for (const tx of transactions) {
+      const key = normalize(tx.description)
+      const hit = descCache.get(key)
+      if (hit) {
+        const cat = categories.find(c => c.name === hit.category)
+        if (cat) {
+          const sub = hit.subcategory ? cat.subcategories?.find(s => s.name === hit.subcategory) : null
+          result[tx.id] = { category_id: cat.id, subcategory_id: sub?.id ?? '', confidence: 'medium' }
+        }
+      } else {
+        toProcess.push(tx)
+      }
+    }
 
-    const prompt = `Sos un asistente de finanzas personales argentino. Dado un listado de transacciones, asigná la categoría y subcategoría más apropiada de las disponibles.
+    if (toProcess.length === 0) return Response.json({ suggestions: result })
 
-CATEGORÍAS DISPONIBLES:
-${catList}
+    // 2. Llamar a Claude solo para los no cacheados (máximo MAX_BATCH)
+    const batch = toProcess.slice(0, MAX_BATCH)
 
-TRANSACCIONES (formato: id|tipo|descripción):
+    // Prompt compacto: solo nombres de categorías (sin subcategorías en el listado principal)
+    const catNames = categories.map(c => c.name).join(', ')
+    const txList   = batch.map(tx => `${tx.id}|${tx.type}|${tx.description}`).join('\n')
+
+    const prompt = `Categorizador financiero argentino.
+Categorías: ${catNames}
+
+Transacciones (id|tipo|descripción):
 ${txList}
 
-Respondé SOLO con un JSON válido, sin texto adicional, con este formato exacto:
-{
-  "suggestions": {
-    "<id>": {
-      "category": "<nombre exacto de la categoría>",
-      "subcategory": "<nombre exacto de la subcategoría o null>"
-    }
-  }
-}
-
-Reglas:
-- Usá SOLO categorías del listado. Si ninguna aplica, omití esa transacción.
-- El nombre debe ser EXACTO, incluyendo tildes y mayúsculas.
-- Si no hay subcategoría apropiada, usá null.
-- Para tipo "income", priorizá categorías de ingresos.`
+JSON: {"r":{"<id>":{"cat":"<nombre exacto>","sub":"<subcategoría o null>"}}}
+Solo incluí las que matcheen claramente.`
 
     const anthropic = createAnthropic({ apiKey })
-
     const { text } = await generateText({
       model: anthropic('claude-haiku-4-5'),
       prompt,
     })
 
-    // Parse response
-    const parsed = JSON.parse(text.trim())
-    const suggestions = parsed.suggestions ?? {}
+    const parsed = JSON.parse(text.trim().replace(/```json|```/g, ''))
+    const suggestions = parsed.r ?? {}
 
-    // Map category/subcategory names back to IDs
-    const result: Record<string, { category_id: string; subcategory_id: string; confidence: string }> = {}
+    // 3. Mapear a IDs y guardar en cache
+    if (descCache.size > CACHE_MAX) descCache.clear()
 
-    for (const [txId, s] of Object.entries(suggestions) as [string, { category: string; subcategory: string | null }][]) {
-      const cat = categories.find(c => c.name === s.category)
+    for (const tx of batch) {
+      const s = suggestions[tx.id]
+      if (!s?.cat) continue
+
+      const cat = categories.find(c => c.name === s.cat)
       if (!cat) continue
 
-      let subcategory_id = ''
-      if (s.subcategory && cat.subcategories) {
-        const sub = cat.subcategories.find(sc => sc.name === s.subcategory)
-        if (sub) subcategory_id = sub.id
-      }
+      const sub = s.sub ? cat.subcategories?.find(sc => sc.name === s.sub) : null
+      result[tx.id] = { category_id: cat.id, subcategory_id: sub?.id ?? '', confidence: 'medium' }
 
-      result[txId] = {
-        category_id: cat.id,
-        subcategory_id,
-        confidence: 'medium',
-      }
+      // Guardar en cache por descripción normalizada
+      descCache.set(normalize(tx.description), { category: s.cat, subcategory: s.sub ?? null })
     }
 
     return Response.json({ suggestions: result })

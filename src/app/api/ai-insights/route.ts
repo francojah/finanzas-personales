@@ -1,10 +1,15 @@
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { generateText } from 'ai'
 import { createClient } from '@/lib/supabase/server'
-import { buildFinancialContext } from '@/lib/financial-context'
+import { buildLightContext } from '@/lib/light-context'
+import { getUserPlan } from '@/lib/get-user-plan'
 
 export const runtime = 'nodejs'
-export const maxDuration = 30
+export const maxDuration = 20
+
+// Cache server-side por user_id: { ts, insights }
+const serverCache = new Map<string, { ts: number; insights: unknown[] }>()
+const CACHE_TTL = 23 * 60 * 60 * 1000 // 23 horas
 
 export async function GET() {
   try {
@@ -12,36 +17,31 @@ export async function GET() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Solo Premium
+    const plan = await getUserPlan(supabase, user.id)
+    if (plan !== 'premium') {
+      return Response.json({ insights: [], upgradeRequired: true })
+    }
+
+    // Cache server-side: 1 llamada/usuario/23h
+    const cached = serverCache.get(user.id)
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
+      return Response.json({ insights: cached.insights, cached: true })
+    }
+
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return Response.json({ insights: [] })
 
-    // Contexto financiero completo del usuario
-    const context = await buildFinancialContext(supabase)
+    // Contexto mínimo (~80-100 tokens)
+    const context = await buildLightContext(supabase)
+    if (!context) return Response.json({ insights: [] })
 
-    const prompt = `Sos un asesor financiero personal experto en finanzas personales argentinas.
-Analizá el contexto financiero del usuario y generá exactamente 3 insights concisos y ACCIONABLES.
+    // Prompt ultra-compacto — objetivo: <250 tokens totales de input
+    const prompt = `Asesor financiero argentino. Datos del usuario:
+${context}
 
-CONTEXTO FINANCIERO:
-${JSON.stringify(context, null, 2)}
-
-Reglas:
-- Cada insight debe ser específico con números reales del usuario
-- Debe incluir UNA acción concreta que el usuario puede tomar hoy
-- Tono directo, amigable, en argentino (vos, etc.)
-- NO digas "considerá" o "podrías" — decí QUÉ hacer
-- Máximo 2 oraciones por insight
-
-Respondé SOLO con JSON válido:
-{
-  "insights": [
-    {
-      "type": "saving" | "spending" | "investment" | "debt" | "alert",
-      "title": "título corto (max 5 palabras)",
-      "body": "descripción con número concreto y acción",
-      "priority": "high" | "medium" | "low"
-    }
-  ]
-}`
+Dame 2 insights concisos y ACCIONABLES (máximo 1 oración cada uno, con número concreto).
+JSON: {"insights":[{"type":"saving|spending|investment|alert","title":"max 4 palabras","body":"1 oración con número"}]}`
 
     const anthropic = createAnthropic({ apiKey })
     const { text } = await generateText({
@@ -49,8 +49,21 @@ Respondé SOLO con JSON válido:
       prompt,
     })
 
-    const parsed = JSON.parse(text.trim())
-    return Response.json({ insights: parsed.insights ?? [] })
+    const parsed = JSON.parse(text.trim().replace(/```json|```/g, ''))
+    const insights = (parsed.insights ?? []).slice(0, 2) // máximo 2
+
+    // Guardar en cache server-side
+    serverCache.set(user.id, { ts: Date.now(), insights })
+
+    // Limpiar cache vieja cada 100 inserciones
+    if (serverCache.size > 1000) {
+      const now = Date.now()
+      for (const [key, val] of serverCache.entries()) {
+        if (now - val.ts > CACHE_TTL) serverCache.delete(key)
+      }
+    }
+
+    return Response.json({ insights })
   } catch (e) {
     console.error('[ai-insights]', e)
     return Response.json({ insights: [] })

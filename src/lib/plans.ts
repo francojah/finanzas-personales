@@ -17,6 +17,8 @@ export interface PlanFeatures {
   import: boolean                // Importar extracto bancario
   reporte: boolean               // Reporte mensual
   recurrentes: boolean           // Gastos recurrentes
+  aiInsights: boolean            // Insights proactivos de IA
+  aiCategorize: boolean          // Auto-categorización IA en import
 }
 
 export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
@@ -33,6 +35,8 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     import:          false,
     reporte:         false,
     recurrentes:     false,
+    aiInsights:      false,
+    aiCategorize:    false,
   },
   premium: {
     maxTransactions: Infinity,
@@ -47,6 +51,8 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     import:          true,
     reporte:         true,
     recurrentes:     true,
+    aiInsights:      true,
+    aiCategorize:    true,
   },
 }
 
