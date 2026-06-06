@@ -16,6 +16,7 @@ const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
   { value: 'crypto',  label: 'Crypto'          },
   { value: 'cash',    label: 'Efectivo'        },
 ]
+const CURRENCIES: Currency[] = ['ARS', 'USD', 'USDT']
 const COLORS = ['#6366f1','#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#64748b']
 
 interface FormState { name: string; type: AccountType; platform: string; currency: Currency; initial_balance: string; color: string }
