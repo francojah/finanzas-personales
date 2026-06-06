@@ -80,7 +80,6 @@ Reglas:
           ],
         },
       ],
-      maxTokens: 300,
     })
 
     // Extraer JSON de la respuesta (el modelo puede agregar texto extra)
