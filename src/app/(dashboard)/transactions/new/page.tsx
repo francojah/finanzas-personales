@@ -13,7 +13,9 @@ import { useCategories } from '@/hooks/useCategories'
 import { useAccounts } from '@/hooks/useAccounts'
 import { useCreditCards } from '@/hooks/useCreditCards'
 import { SplitExpenseSection } from '@/components/shared/SplitExpenseSection'
-import { ReceiptUpload } from '@/components/shared/ReceiptUpload'
+import { ReceiptScanner } from '@/components/shared/ReceiptScanner'
+import type { ScannedData } from '@/components/shared/ReceiptScanner'
+import { usePlan } from '@/hooks/usePlan'
 import { formatARS, formatUSD, cn } from '@/lib/utils'
 import { addMonths, format as fmtDate } from 'date-fns'
 import type { Subcategory } from '@/types/database'
@@ -56,10 +58,20 @@ export default function NewTransactionPage() {
   const router = useRouter()
   const supabase = createClient()
   const { mep, ccl, loading: rateLoading, refresh } = useExchangeRate()
+  const { isPremium } = usePlan()
   const [convertedAmount, setConvertedAmount] = useState<{ ars: number; usd: number } | null>(null)
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [splits, setSplits] = useState<Split[]>([])
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
+
+  // Pre-llena el formulario con datos extraídos del ticket por Claude Vision
+  function handleScanned(data: ScannedData) {
+    if (data.amount)      setValue('amount', String(data.amount))
+    if (data.currency)    setValue('currency', data.currency)
+    if (data.description) setValue('description', data.description)
+    if (data.date)        setValue('date', data.date)
+    if (data.type)        setValue('type', data.type)
+  }
 
   const { register, control, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -400,7 +412,13 @@ export default function NewTransactionPage() {
           <div>{lbl('Descripción')}<input {...register('description')} type="text" placeholder="Opcional" className="input-base" /></div>
         </div>
 
-        <ReceiptUpload value={receiptUrl} onChange={setReceiptUrl} disabled={isSubmitting} />
+        <ReceiptScanner
+          receiptUrl={receiptUrl}
+          onReceiptUrl={setReceiptUrl}
+          onScanned={handleScanned}
+          isPremium={isPremium}
+          disabled={isSubmitting}
+        />
 
         {/* Recurrente */}
         {watchType !== 'transfer' && (

@@ -19,6 +19,7 @@ export interface PlanFeatures {
   recurrentes: boolean           // Gastos recurrentes
   aiInsights: boolean            // Insights proactivos de IA
   aiCategorize: boolean          // Auto-categorización IA en import
+  receiptScan: boolean           // Escaneo de tickets con Claude Vision
 }
 
 export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
@@ -37,6 +38,7 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     recurrentes:     false,
     aiInsights:      false,
     aiCategorize:    false,
+    receiptScan:     false,
   },
   premium: {
     maxTransactions: Infinity,
@@ -53,6 +55,7 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     recurrentes:     true,
     aiInsights:      true,
     aiCategorize:    true,
+    receiptScan:     true,
   },
 }
 
@@ -74,6 +77,7 @@ export const PREMIUM_FEATURES_LIST = [
   'Metas de ahorro y Préstamos',
   'Guru Financiero con IA',
   'Importar extractos bancarios',
+  'Escaneo de tickets con IA',
   'Reporte mensual PDF',
   'Gastos recurrentes',
   'Cobros entre personas',
