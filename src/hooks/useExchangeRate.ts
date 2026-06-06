@@ -44,12 +44,12 @@ export function useExchangeRate(): ExchangeRates {
       const res  = await window.fetch('https://dolarapi.com/v1/dolares')
       const list = await res.json() as { nombre: string; compra: number; venta: number }[]
 
-      const find = (name: string) => list.find(d => d.nombre.toLowerCase().includes(name.toLowerCase()))?.venta ?? null
+      const byCasa = (casa: string) => list.find(d => d.casa?.toLowerCase() === casa)?.venta ?? null
 
-      const mep     = find('mep')
-      const ccl     = find('contado con liquidación') ?? find('ccl') ?? find('contado')
-      const blue    = find('blue') ?? find('informal')
-      const oficial = find('oficial')
+      const mep     = byCasa('bolsa')       // Dólar Bolsa = MEP
+      const ccl     = byCasa('contadoconliqui')
+      const blue    = byCasa('blue')
+      const oficial = byCasa('oficial')
 
       if (!mep) throw new Error('No MEP data')
 

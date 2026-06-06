@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 
 // Cada sección tiene un ID único. Guardamos en localStorage qué ya vio el usuario.
-const STORAGE_KEY = 'finanzapp_onboarding_seen'
+const STORAGE_KEY = 'registratio_onboarding_seen'
 
 function getSeenTips(): Set<string> {
   if (typeof window === 'undefined') return new Set()

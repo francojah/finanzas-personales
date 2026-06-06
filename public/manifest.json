@@ -1,6 +1,6 @@
 {
-  "name": "Finanzapp",
-  "short_name": "Finanzapp",
+  "name": "REGI$TRATIO",
+  "short_name": "REGI$TRATIO",
   "description": "Tu gestor de finanzas personales",
   "start_url": "/",
   "display": "standalone",

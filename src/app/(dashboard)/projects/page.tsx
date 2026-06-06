@@ -76,7 +76,7 @@ function ProjectsPageContent() {
       <OnboardingTip
         tipId="projects"
         title="Metas de ahorro y gasto"
-        description="Creá una meta para tu próximo objetivo: vacaciones, un auto, fondo de emergencia. Finanzapp te muestra cuánto te falta y a qué ritmo vas."
+        description="Creá una meta para tu próximo objetivo: vacaciones, un auto, fondo de emergencia. REGI$TRATIO te muestra cuánto te falta y a qué ritmo vas."
         cta={{ label: 'Crear primera meta', href: '/projects/new' }}
         accent
       />
@@ -247,17 +247,4 @@ function ProjectCard({
           {isOverBudget && (
             <p className="text-xs text-red-500 mt-1 font-medium">
               ⚠ Superaste el presupuesto por {isExpense
-                ? (project.budget_currency === 'USD' ? formatUSD : formatARS)(project.spent - (project.budget_amount ?? 0))
-                : ''}
-            </p>
-          )}
-          {project.target_date && (
-            <p className="text-xs text-slate-400 mt-1">
-              Fecha objetivo: {new Date(project.target_date).toLocaleDateString('es-AR')}
-            </p>
-          )}
-        </div>
-      ) : null}
-    </button>
-  )
-}
+                ? (project.bu

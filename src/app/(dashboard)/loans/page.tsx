@@ -89,7 +89,7 @@ function LoansPageContent() {
       <OnboardingTip
         tipId="loans"
         title="Seguimiento de préstamos"
-        description="Registrá cualquier préstamo que hayas tomado — banco, tarjeta, personal. Finanzapp te recuerda cada cuota y te muestra cuánto te falta pagar."
+        description="Registrá cualquier préstamo que hayas tomado — banco, tarjeta, personal. REGI$TRATIO te recuerda cada cuota y te muestra cuánto te falta pagar."
         cta={{ label: 'Registrar préstamo', href: '/loans/new' }}
         accent
       />
@@ -254,16 +254,4 @@ function LoansPageContent() {
               <div
                 key={loan.id}
                 className="rounded-xl px-4 py-3 flex items-center gap-3"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)', opacity: 0.6 }}
-              >
-                <CheckCircle2 size={16} style={{ color: 'var(--income)' }} />
-                <p className="text-sm font-medium flex-1" style={{ color: 'var(--text-secondary)' }}>{loan.name}</p>
-                <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Cancelado</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', op

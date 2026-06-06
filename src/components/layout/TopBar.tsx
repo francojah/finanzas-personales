@@ -27,7 +27,7 @@ export function TopBar() {
             <polyline points="16 7 22 7 22 13"/>
           </svg>
         </div>
-        <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Finanzapp</span>
+        <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>REGI<span style={{ color: '#f0b429' }}>$</span>TRATIO</span>
       </div>
 
       {/* Mobile search icon */}

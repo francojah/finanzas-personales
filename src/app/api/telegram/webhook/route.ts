@@ -112,9 +112,13 @@ function fmtARS(n: number) {
 
 // ── POST: recibir updates de Telegram ────────────────────────
 export async function POST(req: NextRequest) {
+  // Validar secret — si no está configurado en Vercel, saltar la validación
   if (WEBHOOK_SECRET) {
     const token = req.headers.get('x-telegram-bot-api-secret-token')
-    if (token !== WEBHOOK_SECRET) return NextResponse.json({ ok: false }, { status: 401 })
+    if (token !== WEBHOOK_SECRET) {
+      console.error('[TG] 401 — token recibido:', token, '— esperado:', WEBHOOK_SECRET)
+      return NextResponse.json({ ok: false }, { status: 401 })
+    }
   }
   if (!BOT_TOKEN) return NextResponse.json({ ok: true })
 
@@ -123,6 +127,9 @@ export async function POST(req: NextRequest) {
 
   const msg = body?.message
   if (!msg) return NextResponse.json({ ok: true })
+
+  // Wrap general para evitar crashes silenciosos
+  try {
 
   const chatId    = String(msg.chat?.id)
   const firstName = msg.from?.first_name ?? ''
@@ -135,7 +142,7 @@ export async function POST(req: NextRequest) {
   if (text === '/start' || text === '/ayuda' || text === '/help') {
     const userId = await getUserByChatId(chatId)
     if (userId) {
-      await sendMessage(chatId, `💰 <b>Finanzapp Bot</b>
+      await sendMessage(chatId, `💰 <b>REGI$TRATIO Bot</b>
 
 Hola, ${firstName}! Tu cuenta está vinculada ✅
 
@@ -149,11 +156,11 @@ Hola, ${firstName}! Tu cuenta está vinculada ✅
 • <code>/saldo</code> → balance del mes
 • <code>/desvincular</code> → desconectar cuenta`)
     } else {
-      await sendMessage(chatId, `💰 <b>Finanzapp Bot</b>
+      await sendMessage(chatId, `💰 <b>REGI$TRATIO Bot</b>
 
 Tu Chat ID es: <code>${chatId}</code>
 
-Para vincular tu cuenta de Finanzapp:
+Para vincular tu cuenta de REGI$TRATIO:
 1. Entrá a la app → Configuración → Bot de Telegram
 2. Generá un código de vinculación
 3. Enviámelo acá con: <code>/link TU-CODIGO</code>`)
@@ -213,7 +220,7 @@ Escribí <code>/ayuda</code> para ver todos los comandos.`)
   if (!userId) {
     await sendMessage(chatId, `⚠️ Tu cuenta no está vinculada.
 
-1. Entrá a Finanzapp → Configuración → Bot de Telegram
+1. Entrá a REGI$TRATIO → Configuración → Bot de Telegram
 2. Generá un código y envialo con <code>/link TU-CODIGO</code>`)
     return NextResponse.json({ ok: true })
   }

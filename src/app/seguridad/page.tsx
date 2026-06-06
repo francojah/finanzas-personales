@@ -10,7 +10,7 @@ const SECTIONS = [
   {
     icon: Eye,
     title: 'No accedemos a tu banco',
-    body: 'Finanzapp no se conecta a ningún banco ni plataforma financiera. Vos sos quien carga los datos manualmente o importa un archivo CSV/Excel/PDF. Nunca pedimos credenciales bancarias.',
+    body: 'REGI$TRATIO no se conecta a ningún banco ni plataforma financiera. Vos sos quien carga los datos manualmente o importa un archivo CSV/Excel/PDF. Nunca pedimos credenciales bancarias.',
   },
   {
     icon: Server,
@@ -42,7 +42,7 @@ export default function SeguridadPage() {
               <polyline points="16 7 22 7 22 13"/>
             </svg>
           </div>
-          <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Finanzapp</span>
+          <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>REGI<span style={{ color: '#f0b429' }}>$</span>TRATIO</span>
         </Link>
         <Link href="/auth/register" className="text-sm font-semibold px-4 py-2 rounded-xl text-white" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
           Empezar gratis

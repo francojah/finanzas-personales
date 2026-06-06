@@ -203,7 +203,7 @@ export default function DashboardPage() {
 
       <OnboardingTip
         tipId="dashboard"
-        title="¡Bienvenido a Finanzapp!"
+        title="¡Bienvenido a REGI$TRATIO!"
         description="Empezá cargando tu primera cuenta en Configuración → Cuentas. Después registrá un movimiento y el dashboard se va a poblar solo."
         cta={{ label: 'Configurar mi cuenta', href: '/settings/accounts' }}
       />
@@ -391,99 +391,4 @@ export default function DashboardPage() {
               const isIncome  = tx.type === 'income'
               const isExpense = tx.type === 'expense'
               const Icon = isIncome ? ArrowUpCircle : isExpense ? ArrowDownCircle : ArrowLeftRight
-              const color = isIncome ? 'var(--income)' : isExpense ? 'var(--expense)' : 'var(--accent-icon)'
-              const prefix = isIncome ? '+' : isExpense ? '-' : ''
-              const amount = currency === 'ARS' ? tx.amount_ars : tx.amount_usd
-
-              return (
-                <button
-                  key={tx.id}
-                  onClick={() => setSelectedTxId(tx.id)}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-colors"
-                  style={{ background: 'transparent' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-hover)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <Icon size={20} style={{ color }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                      {tx.description || (tx.category as any)?.name || 'Sin descripción'}
-                    </p>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {[tx.description ? (tx.category as any)?.name : null, formatDateShort(tx.date)].filter(Boolean).join(' · ')}
-                    </p>
-                  </div>
-                  <span className="text-sm font-bold shrink-0" style={{ color }}>
-                    {prefix}{fmt(amount, currency)}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      <TransactionDrawer
-        transactionId={selectedTxId}
-        onClose={() => setSelectedTxId(null)}
-        onDeleted={id => { setRecentTx(prev => prev.filter(t => t.id !== id)); setSelectedTxId(null) }}
-      />
-    </div>
-  )
-}
-
-function KPICard({ label, value, iconBg, iconColor, valueColor, subtitle, change, changePositiveIsGood, tooltip }: {
-  label: string; value: string
-  iconBg: string; iconColor: string; valueColor: string
-  subtitle?: string; change?: string | null; changePositiveIsGood?: boolean
-  tooltip?: string
-}) {
-  const [showTooltip, setShowTooltip] = useState(false)
-  const isPositive = change?.startsWith('+')
-  const changeColor = !change ? '' : changePositiveIsGood
-    ? (isPositive ? 'var(--income)' : 'var(--expense)')
-    : (isPositive ? 'var(--expense)' : 'var(--income)')
-
-  return (
-    <div className="rounded-xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="inline-flex p-2 rounded-xl" style={{ background: iconBg }}>
-          <TrendingUp size={16} style={{ color: iconColor }} />
-        </div>
-        {change && (
-          <span className="text-xs font-semibold px-1.5 py-0.5 rounded-md" style={{ color: changeColor, background: `color-mix(in srgb, ${changeColor} 15%, transparent)` }}>
-            {change}
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-1 mb-0.5">
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</p>
-        {tooltip && (
-          <div className="relative">
-            <button
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-              onClick={() => setShowTooltip(v => !v)}
-              className="flex items-center"
-            >
-              <Info size={11} style={{ color: 'var(--text-faint)' }} />
-            </button>
-            {showTooltip && (
-              <div
-                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2.5 rounded-xl text-xs z-50 shadow-lg"
-                style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-              >
-                {tooltip}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
-                  style={{ borderTopColor: 'var(--border)' }} />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-      <p className="text-lg font-bold leading-tight" style={{ color: valueColor }}>{value}</p>
-      {subtitle && <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>}
-      {change && <p className="text-[10px] mt-1" style={{ color: 'var(--text-faint)' }}>vs mes anterior</p>}
-    </div>
-  )
-}
+              const color = isIncome ? 'var(--income)' : isExpense ? 'var(--expense)' : 'var(--accent
