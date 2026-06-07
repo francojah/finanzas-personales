@@ -17,8 +17,36 @@ export interface CategorySuggestion {
 }
 
 // ── Normalizar texto ─────────────────────────────────────────
+// Elimina prefijos bancarios comunes antes de normalizar
+const BANK_PREFIXES = [
+  /^k\s+/i,           // Galicia: "K DISNEY PLUS" → "DISNEY PLUS"
+  /^merpago\*/i,      // MercadoPago: "MERPAGO*CYCLESMOTOS" → "CYCLESMOTOS"
+  /^mp\*/i,           // MP alias
+  /^mercadopago\*/i,
+  /^pagofacil\s*/i,
+  /^rapipago\s*/i,
+  /^debin\s*/i,
+  /^debito\s+en\s+/i,
+  /^compra\s+/i,
+  /^pago\s+/i,
+  /^\*+/,             // asteriscos al inicio
+]
+
+function stripBankPrefixes(s: string): string {
+  let clean = s.trim()
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const re of BANK_PREFIXES) {
+      const after = clean.replace(re, '').trim()
+      if (after !== clean) { clean = after; changed = true }
+    }
+  }
+  return clean
+}
+
 function norm(s: string): string {
-  return s
+  return stripBankPrefixes(s)
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '') // quitar tildes
