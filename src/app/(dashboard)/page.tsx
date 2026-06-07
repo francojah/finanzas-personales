@@ -268,75 +268,47 @@ export default function DashboardPage() {
       {/* Cuentas por tipo con saldo calculado */}
       <AccountsBreakdownWidget />
 
-      {/* Patrimonio + Inversiones */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <button
-          onClick={() => router.push('/patrimonio')}
-          className="flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-        >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(96,165,250,0.1)' }}>
-            <Building2 size={19} style={{ color: '#60a5fa' }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Patrimonio</p>
-            {patrimonioUSD > 0 || patrimonioARS > 0 ? (
-              <>
-                <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatUSD(patrimonioUSD)}</p>
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{formatARS(patrimonioARS)}</p>
-              </>
-            ) : (
-              <p className="text-sm" style={{ color: 'var(--text-faint)' }}>Sin activos registrados</p>
-            )}
-          </div>
-          <ChevronRight size={14} style={{ color: 'var(--text-faint)' }} />
-        </button>
-
-        <button
-          onClick={() => router.push('/investments')}
-          className="flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-        >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'var(--accent-bg)' }}>
-            <TrendingUp size={19} style={{ color: 'var(--accent-icon)' }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Inversiones</p>
-            {inversionesUSD > 0 ? (
-              <>
-                <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>{formatUSD(inversionesUSD)}</p>
-                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{formatARS(inversionesARS)}</p>
-              </>
-            ) : (
-              <p className="text-sm" style={{ color: 'var(--text-faint)' }}>Sin posiciones activas</p>
-            )}
-          </div>
-          <ChevronRight size={14} style={{ color: 'var(--text-faint)' }} />
-        </button>
-      </div>
-
-      {/* Patrimonio neto consolidado */}
-      {(patrimonioUSD > 0 || inversionesUSD > 0) && (
-        <div
-          className="rounded-xl px-4 py-3 flex items-center justify-between"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-        >
-          <div className="flex items-center gap-2">
-            <Wallet size={16} style={{ color: 'var(--text-muted)' }} />
-            <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Patrimonio neto total</span>
-          </div>
-          <div className="text-right">
-            <p className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
-              {formatUSD(patrimonioUSD + inversionesUSD)}
+      {/* Patrimonio neto — card unificado */}
+      <button
+        onClick={() => router.push('/patrimonio')}
+        className="w-full rounded-2xl overflow-hidden text-left transition-all"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent-border)')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+      >
+        <div className="px-5 pt-4 pb-3">
+          <p className="text-xs font-bold tracking-widest mb-1" style={{ color: 'var(--text-faint)' }}>LO QUE REALMENTE ES TUYO</p>
+          <p className="text-2xl font-black" style={{ color: 'var(--text-primary)' }}>
+            {formatUSD(patrimonioUSD + inversionesUSD)}
+          </p>
+          {mep && (
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+              {formatARS(patrimonioARS + inversionesARS)}
             </p>
-            {mep && (
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                {formatARS(patrimonioARS + inversionesARS)}
+          )}
+        </div>
+
+        {/* Desglose compacto */}
+        <div className="flex" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+          {[
+            { label: 'Bienes físicos', value: patrimonioUSD, color: '#60a5fa' },
+            { label: 'Inversiones',    value: inversionesUSD, color: '#10b981' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="flex-1 px-4 py-2.5" style={{ borderRight: label === 'Bienes físicos' ? '1px solid var(--border-subtle)' : 'none' }}>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+                <span className="text-xs" style={{ color: 'var(--text-faint)' }}>{label}</span>
+              </div>
+              <p className="text-sm font-semibold" style={{ color: value > 0 ? 'var(--text-primary)' : 'var(--text-faint)' }}>
+                {value > 0 ? formatUSD(value) : '—'}
               </p>
-            )}
+            </div>
+          ))}
+          <div className="flex items-center pr-4" style={{ color: 'var(--text-faint)' }}>
+            <ChevronRight size={14} />
           </div>
         </div>
-      )}
+      </button>
 
       {/* Budget Overview */}
       <BudgetOverview selectedDate={selectedDate} />

@@ -55,7 +55,7 @@ export function AccountsBreakdownWidget() {
   const supabase = createClient()
   const [accounts, setAccounts] = useState<AccountWithBalance[]>([])
   const [loading, setLoading] = useState(true)
-  const [expanded, setExpanded] = useState<string[]>(['liquid', 'broker', 'crypto', 'savings'])
+  const [expanded, setExpanded] = useState<string[]>([])
 
   useEffect(() => {
     async function load() {

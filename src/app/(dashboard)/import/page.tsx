@@ -292,29 +292,59 @@ function ImportPageContent() {
     setStep(2)
   }
 
-  // ── Importar ─────────────────────────────────────────────────
+  // ── Importar en lotes para evitar límite de payload ─────────
   async function handleImport() {
     const selected = transactions.filter(t => t.selected && !t.error)
     if (selected.length === 0) { toast.error('Seleccioná al menos un movimiento'); return }
     setImporting(true)
+
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const rate = mep ?? 1
+    if (!user) { setImporting(false); return }
+
+    const rate = mep ?? 1200
     const rows = selected.map(tx => ({
-      user_id: user.id, type: tx.type,
-      amount_original: tx.amount, currency_original: tx.currency,
+      user_id: user.id,
+      type: tx.type,
+      amount_original: tx.amount,
+      currency_original: tx.currency,
       amount_ars: tx.currency === 'ARS' ? tx.amount : tx.amount * rate,
       amount_usd: tx.currency === 'USD' ? tx.amount : tx.amount / rate,
-      exchange_rate: rate, exchange_rate_type: 'mep',
-      description: tx.description, date: tx.date,
+      exchange_rate: rate,
+      exchange_rate_type: 'mep',
+      description: tx.description,
+      date: tx.date,
       category_id: tx.category_id || null,
       subcategory_id: tx.subcategory_id || null,
       account_id: tx.account_id || null,
+      is_recurring: false,
     }))
-    const { error } = await supabase.from('transactions').insert(rows)
-    if (error) { toast.error('Error al importar'); console.warn(error) }
-    else { toast.success(`✓ ${selected.length} movimientos importados`); router.push('/transactions') }
+
+    // Insertar en lotes de 100 para no superar el límite de Supabase
+    const BATCH = 100
+    let imported = 0
+    let failed = 0
+
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const batch = rows.slice(i, i + BATCH)
+      const { error } = await supabase.from('transactions').insert(batch)
+      if (error) {
+        console.error(`[import] batch ${i}-${i + BATCH} error:`, error.message)
+        failed += batch.length
+      } else {
+        imported += batch.length
+      }
+    }
+
     setImporting(false)
+
+    if (failed === 0) {
+      toast.success(`✓ ${imported} movimientos importados correctamente`)
+      router.push('/transactions')
+    } else if (imported > 0) {
+      toast.error(`Se importaron ${imported} pero fallaron ${failed}. Revisá los datos e intentá de nuevo.`)
+    } else {
+      toast.error('No se pudo importar. Revisá que las fechas y montos sean válidos.')
+    }
   }
 
   const onDrop = useCallback((e: React.DragEvent) => {
