@@ -2,16 +2,16 @@ import { NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
 
-// BCRA variable 4 = UVA (Unidad de Valor Adquisitivo)
-// Publica el valor de lunes a viernes. Usamos una ventana de 10 días para cubrir fines de semana y feriados.
+// BCRA API v4.0 — variable 31 = UVA (Unidad de Valor Adquisitivo, base 31.3.16=14.05)
+// La API v2 fue deprecada el 01/06/2025. La v4 usa query params y respuesta anidada en results[0].detalle
 export async function GET() {
   try {
     const today = new Date()
     const from  = new Date(today)
-    from.setDate(today.getDate() - 10)
+    from.setDate(today.getDate() - 10) // ventana de 10 días cubre fines de semana y feriados
 
     const fmt = (d: Date) => d.toISOString().split('T')[0]
-    const url = `https://api.bcra.gob.ar/estadisticas/v2/datosvariable/4/${fmt(from)}/${fmt(today)}`
+    const url = `https://api.bcra.gob.ar/estadisticas/v4.0/monetarias/31?desde=${fmt(from)}&hasta=${fmt(today)}`
 
     const res = await fetch(url, {
       headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
@@ -21,13 +21,13 @@ export async function GET() {
     if (!res.ok) throw new Error(`BCRA ${res.status}`)
 
     const json = await res.json()
-    const results: { fecha: string; valor: number }[] = json?.results ?? []
+    // v4 response: { results: [{ idVariable: 31, detalle: [{fecha, valor}] }] }
+    const detalle: { fecha: string; valor: number }[] = json?.results?.[0]?.detalle ?? []
 
-    if (!results.length) throw new Error('Sin datos')
+    if (!detalle.length) throw new Error('Sin datos')
 
-    // Ordenar por fecha desc y tomar el más reciente
-    results.sort((a, b) => b.fecha.localeCompare(a.fecha))
-    const latest = results[0]
+    // detalle viene ordenado desc — el primero es el más reciente
+    const latest = detalle[0]
 
     return NextResponse.json({
       value: latest.valor,
