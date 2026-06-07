@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Loader2, Trash2, CheckCircle2, Landmark } from 'lucide-react'
+import { ArrowLeft, Loader2, Trash2, CheckCircle2, Landmark, TrendingUp, RefreshCw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatARS, formatUSD } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -11,9 +11,11 @@ interface Loan {
   id: string
   name: string
   lender: string | null
+  loan_type: 'fixed' | 'uva'
   total_amount: number
   currency: 'ARS' | 'USD'
   monthly_payment: number
+  uva_installment: number | null
   total_installments: number | null
   paid_installments: number
   start_date: string | null
@@ -28,13 +30,33 @@ export default function LoanDetailPage() {
   const supabase = createClient()
   const [loan, setLoan] = useState<Loan | null>(null)
   const [loading, setLoading] = useState(true)
+  const [uvaValue, setUvaValue] = useState<number | null>(null)
+  const [uvaDate, setUvaDate] = useState<string | null>(null)
+  const [uvaLoading, setUvaLoading] = useState(false)
 
   useEffect(() => { load() }, [id])
 
   async function load() {
     const { data } = await supabase.from('loans').select('*').eq('id', id).single()
-    setLoan(data as Loan)
+    const loan = data as Loan
+    setLoan(loan)
     setLoading(false)
+    if (loan?.loan_type === 'uva') fetchUVA()
+  }
+
+  async function fetchUVA() {
+    setUvaLoading(true)
+    try {
+      const res = await fetch('/api/prices/uva')
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setUvaValue(data.value)
+      setUvaDate(data.date)
+    } catch {
+      toast.error('No se pudo obtener el valor UVA del BCRA')
+    } finally {
+      setUvaLoading(false)
+    }
   }
 
   async function markPaid() {
@@ -63,10 +85,15 @@ export default function LoanDetailPage() {
   )
   if (!loan) return null
 
-  const fmt = loan.currency === 'ARS' ? formatARS : formatUSD
+  const isUVA = loan.loan_type === 'uva'
+  const cuotaARS = isUVA && uvaValue && loan.uva_installment
+    ? loan.uva_installment * uvaValue
+    : null
+  const fmt = loan.currency === 'USD' && !isUVA ? formatUSD : formatARS
+  const displayCuota = cuotaARS ?? loan.monthly_payment
   const rem = loan.total_installments ? loan.total_installments - loan.paid_installments : null
   const pct = loan.total_installments ? Math.min(100, Math.round((loan.paid_installments / loan.total_installments) * 100)) : null
-  const remAmt = rem !== null ? rem * loan.monthly_payment : null
+  const remAmt = rem !== null ? rem * displayCuota : null
 
   return (
     <div className="max-w-xl mx-auto space-y-5">
@@ -81,7 +108,15 @@ export default function LoanDetailPage() {
             <ArrowLeft size={17} />
           </button>
           <div>
-            <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{loan.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{loan.name}</h1>
+              {isUVA && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                  style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
+                  UVA
+                </span>
+              )}
+            </div>
             {loan.lender && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{loan.lender}</p>}
           </div>
         </div>
@@ -94,17 +129,69 @@ export default function LoanDetailPage() {
         </button>
       </div>
 
+      {/* Panel UVA */}
+      {isUVA && (
+        <div className="rounded-xl p-4 space-y-3"
+          style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.25)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={14} style={{ color: '#10b981' }} />
+              <div>
+                <p className="text-xs font-semibold" style={{ color: '#10b981' }}>
+                  Valor UVA {uvaDate ? `· ${uvaDate}` : ''}
+                </p>
+                {uvaValue
+                  ? <p className="text-lg font-black" style={{ color: 'var(--text-primary)' }}>{formatARS(uvaValue)}</p>
+                  : <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+                      {uvaLoading ? 'Consultando BCRA...' : 'No disponible'}
+                    </p>
+                }
+              </div>
+            </div>
+            <button onClick={fetchUVA} disabled={uvaLoading}
+              className="p-2 rounded-lg" style={{ color: '#10b981', background: 'rgba(16,185,129,0.1)' }}>
+              <RefreshCw size={13} className={uvaLoading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+
+          {loan.uva_installment && cuotaARS && (
+            <div className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(16,185,129,0.1)' }}>
+              <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                {formatARS(cuotaARS)}
+                <span className="text-xs font-normal ml-1.5" style={{ color: 'var(--text-faint)' }}>este mes</span>
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>
+                {loan.uva_installment} UVAs × {formatARS(uvaValue!)}
+              </p>
+              <p className="text-[10px] mt-1" style={{ color: 'var(--text-faint)' }}>
+                La cuota varía mensualmente según el valor UVA publicado por el BCRA.
+              </p>
+            </div>
+          )}
+
+          {loan.uva_installment && !cuotaARS && (
+            <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+              Cuota: <strong>{loan.uva_installment} UVAs</strong> — actualizá el valor para ver el monto en pesos.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Stats */}
       <div className="rounded-xl p-5 space-y-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs mb-1" style={{ color: 'var(--text-faint)' }}>Cuota mensual</p>
-            <p className="text-xl font-bold" style={{ color: 'var(--expense)' }}>{fmt(loan.monthly_payment)}</p>
+            <p className="text-xs mb-1" style={{ color: 'var(--text-faint)' }}>
+              {isUVA ? 'Cuota estimada (ARS)' : 'Cuota mensual'}
+            </p>
+            <p className="text-xl font-bold" style={{ color: 'var(--expense)' }}>{fmt(displayCuota)}</p>
           </div>
-          <div>
-            <p className="text-xs mb-1" style={{ color: 'var(--text-faint)' }}>Monto total</p>
-            <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{fmt(loan.total_amount)}</p>
-          </div>
+          {loan.total_amount > 0 && (
+            <div>
+              <p className="text-xs mb-1" style={{ color: 'var(--text-faint)' }}>Monto total</p>
+              <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{fmt(loan.total_amount)}</p>
+            </div>
+          )}
           {rem !== null && (
             <div>
               <p className="text-xs mb-1" style={{ color: 'var(--text-faint)' }}>Cuotas restantes</p>
@@ -143,7 +230,7 @@ export default function LoanDetailPage() {
             <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
               <div
                 className="h-full rounded-full transition-all"
-                style={{ width: `${pct}%`, background: pct >= 80 ? 'var(--income)' : 'var(--accent)' }}
+                style={{ width: `${pct}%`, background: pct >= 80 ? 'var(--income)' : isUVA ? '#10b981' : 'var(--accent)' }}
               />
             </div>
           </div>
