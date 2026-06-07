@@ -11,30 +11,25 @@ export function cn(...inputs: ClassValue[]) {
 // Formateo de moneda
 // ────────────────────────────────────────────────
 
+// Separador de miles: punto | Decimal: coma | Sin decimales — formato Argentina
+const AR_FORMAT = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 })
+
 export function formatARS(amount: number): string {
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 0,
-  }).format(amount)
+  return `$ ${AR_FORMAT.format(Math.round(amount))}`
 }
 
 export function formatUSD(amount: number): string {
-  const formatted = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
-  return `USD ${formatted}`
+  return `USD ${AR_FORMAT.format(Math.round(amount))}`
 }
 
 export function formatCurrency(amount: number, currency: 'ARS' | 'USD' | string): string {
   if (currency === 'ARS') return formatARS(amount)
   if (currency === 'USD') return formatUSD(amount)
-  return `${currency} ${amount.toFixed(2)}`
+  return `${currency} ${AR_FORMAT.format(Math.round(amount))}`
 }
 
 export function formatPercent(value: number): string {
-  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
+  return `${value >= 0 ? '+' : ''}${Math.round(value)}%`
 }
 
 // ────────────────────────────────────────────────

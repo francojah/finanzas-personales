@@ -87,11 +87,11 @@ export function useExchangeRate(): ExchangeRates {
   return { ...rates, loading, error, lastUpdate, refresh: fetchRates }
 }
 
-// Helper: formatear precio en K (ej: 98.500 → "98.5K")
+// Helper: formatear precio compacto con separadores AR (ej: 60.576 → "60.576")
 export function formatK(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M'
-  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K'
-  return n.toFixed(0)
+  if (n >= 1_000_000) return Math.round(n / 1_000_000) + 'M'
+  if (n >= 1_000)     return new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 }).format(Math.round(n))
+  return Math.round(n).toString()
 }
 
 export function convertAmount(amount: number, fromCurrency: 'ARS' | 'USD', rate: number): { ars: number; usd: number } {
