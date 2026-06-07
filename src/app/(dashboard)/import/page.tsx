@@ -74,11 +74,47 @@ function parseDate(raw: string): string {
 }
 
 function parseAmount(raw: string): number {
-  if (!raw) return 0
-  raw = raw.trim().replace(/\s/g, '')
-  if (/^\d{1,3}(\.\d{3})*(,\d+)?$/.test(raw)) raw = raw.replace(/\./g, '').replace(',', '.')
-  else raw = raw.replace(/,/g, '')
-  return Math.abs(parseFloat(raw) || 0)
+  if (!raw && raw !== 0 as any) return 0
+  const str = String(raw).trim()
+  if (!str) return 0
+
+  // Detectar signo antes de limpiar
+  const isNegative = str.includes('-')
+
+  // Quitar todo excepto dígitos, coma y punto
+  const cleaned = str.replace(/[^0-9.,]/g, '')
+  if (!cleaned) return 0
+
+  const lastComma = cleaned.lastIndexOf(',')
+  const lastDot   = cleaned.lastIndexOf('.')
+
+  let normalized: string
+
+  if (lastComma > lastDot) {
+    // Formato argentino/europeo: 83.250,00 → coma es decimal
+    normalized = cleaned.replace(/\./g, '').replace(',', '.')
+  } else if (lastDot > lastComma && lastComma !== -1) {
+    // Formato anglosajón: 83,250.00 → punto es decimal
+    normalized = cleaned.replace(/,/g, '')
+  } else if (lastDot !== -1 && lastComma === -1) {
+    // Solo punto: puede ser miles (83.250) o decimal (83.25)
+    // Si hay exactamente 3 dígitos después del punto → miles; si no → decimal
+    const afterDot = cleaned.substring(lastDot + 1)
+    normalized = afterDot.length === 3 && !cleaned.startsWith('0')
+      ? cleaned.replace('.', '')   // era miles
+      : cleaned                    // era decimal
+  } else if (lastComma !== -1 && lastDot === -1) {
+    // Solo coma
+    const afterComma = cleaned.substring(lastComma + 1)
+    normalized = afterComma.length === 3
+      ? cleaned.replace(',', '')   // era miles
+      : cleaned.replace(',', '.')  // era decimal
+  } else {
+    normalized = cleaned
+  }
+
+  const value = parseFloat(normalized)
+  return isNaN(value) ? 0 : Math.abs(value)
 }
 
 // Colores de confianza
@@ -231,9 +267,11 @@ function ImportPageContent() {
         const c = parseAmount(row[colMap.credit] ?? '')
         if (c > 0) { amount = c; type = 'income' } else { amount = d; type = 'expense' }
       } else {
-        const raw = (row[colMap.amount] ?? '').trim()
+        const raw = String(row[colMap.amount] ?? '').trim()
         amount = parseAmount(raw)
-        type = raw.startsWith('-') ? 'expense' : 'income'
+        // Negativo si tiene '-' en cualquier posición antes de los dígitos, o entre paréntesis
+        const isNeg = /^[^0-9]*-/.test(raw) || /^\(/.test(raw)
+        type = isNeg ? 'expense' : 'income'
       }
       let currency: 'ARS' | 'USD' = defaultCurrency
       if (colMap.currency && row[colMap.currency]) {
